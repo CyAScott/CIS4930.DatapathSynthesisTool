@@ -1,32 +1,33 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Synthesize.CliquePartition
 {
+    /// <summary>
+    /// Ported from the clique_partition.c file in this repo.
+    /// </summary>
     public class CliqueHelper
     {
-        public const int UNKNOWN = -12345;
-        public const int MAXCLIQUES = 200;
+        public const int Unknown = -12345;
+        public const int Maxcliques = 200;
 
-        public const int CLIQUE_UNKNOWN = -12345;
-        public const int CLIQUE_TRUE = 100;
-        public const int CLIQUE_FALSE = 110;
+        public const int CliqueUnknown = -12345;
+        public const int CliqueTrue = 100;
+        public const int CliqueFalse = 110;
 
-        public class clique
+        public class Clique
         {
-            public int[] members = new int[MAXCLIQUES];/* members of the clique */
-            public int size;/* number of members in the clique */
+            public int[] Members = new int[Maxcliques];/* members of the clique */
+            public int Size;/* number of members in the clique */
         }
-        public clique[] clique_set = Enumerable
-            .Range(0, MAXCLIQUES)
-            .Select(index => new clique())
+        public Clique[] CliqueSet = Enumerable
+            .Range(0, Maxcliques)
+            .Select(index => new Clique())
             .ToArray();
-
-
+        
         public bool EnableConsolePrinting { get; set; } = true;
-        public void printf(string text, params int[] numbers)
+        private void print(string text, params int[] numbers)
         {
             if (EnableConsolePrinting)
             {
@@ -35,51 +36,50 @@ namespace Synthesize.CliquePartition
                 Console.Write(text);
             }
         }
-        public void exit(int exitCode)
+        private void exit(int exitCode)
         {
             throw new InvalidProgramException("The program should exit with code: " + exitCode);
         }
-        public void assert(bool test)
+        // ReSharper disable once UnusedParameter.Local
+        private void assert(bool test)
         {
             if (!test)
             {
                 throw new InvalidProgramException("The assert failed.");
             }
         }
-        public int input_sanity_check(int[][] compat, int array_dimension)
+        private void inputSanityCheck(int[][] compat, int arrayDimension)
         {
             /* Verifies whether the compat array passed is valid array
              *  (1) Is each array entry =0 or 1?
              *  (2) Is the matrix symmetric
-             * Note that diagnol entries can be either 0 or 1.
+             * Note that diagonal entries can be either 0 or 1.
              */
 
-            int i = CLIQUE_UNKNOWN;
-            int j = CLIQUE_UNKNOWN;
-            printf(" Checking the sanity of the input..");
+            print(" Checking the sanity of the input..");
 
-            for (i = 0; i < array_dimension; i++)
+            for (var i = 0; i < arrayDimension; i++)
             {
-                for (j = 0; j < array_dimension; j++)
+                for (var j = 0; j < arrayDimension; j++)
                 {
                     if ((compat[i][j] != 1) && (compat[i][j] != 0))
                     {
-                        printf(" %d \n", compat[i][j]);
-                        printf("The value of an array element is other than 1 or 0. Aborting..\n");
+                        print(" %d \n", compat[i][j]);
+                        print("The value of an array element is other than 1 or 0. Aborting..\n");
                         exit(0);
                     }
                     if (compat[i][j] != compat[j][i])
                     {
-                        printf("The compatibility array is NOT symmetric at (%d,%d) and (%d,%d)! Aborting..\n ", i, j, j, i);
+                        print("The compatibility array is NOT symmetric at (%d,%d) and (%d,%d)! Aborting..\n ", i, j, j, i);
                         exit(0);
                     }
-                    printf(".");
+                    print(".");
                 }
             }
-            printf("Done.\n");
-            return CLIQUE_TRUE;
+
+            print("Done.\n");
         }
-        public int output_sanity_check(int array_dimension, int[][] local_compat, int[][] compat)
+        private void outputSanityCheck(int[][] localCompat, int[][] compat)
         {
             /* 
              * Verifies the results of the heuristic.
@@ -93,70 +93,59 @@ namespace Synthesize.CliquePartition
              *   end if
              * end for
              */
-            int i = UNKNOWN, j = UNKNOWN, k = UNKNOWN;
-            int member1 = UNKNOWN, member2 = UNKNOWN;
-
-            printf("\n Verifying the results of the clique partitioning algorithm..");
-            for (i = 0; i < MAXCLIQUES; i++)
+            print("\n Verifying the results of the clique partitioning algorithm..");
+            for (var i = 0; i < Maxcliques; i++)
             {
-                if (clique_set[i].size != UNKNOWN)
+                if (CliqueSet[i].Size != Unknown)
                 {
-                    assert(clique_set[i].size > 0);
-                    for (j = 0; j < clique_set[i].size; j++)
+                    assert(CliqueSet[i].Size > 0);
+                    for (var j = 0; j < CliqueSet[i].Size; j++)
                     {
-                        for (k = 0; k < clique_set[i].size; k++)
+                        for (var k = 0; k < CliqueSet[i].Size; k++)
                         {
                             if (j != k)
                             {
-                                member1 = clique_set[i].members[j];
-                                member2 = clique_set[i].members[k];
+                                var member1 = CliqueSet[i].Members[j];
+                                var member2 = CliqueSet[i].Members[k];
 
                                 assert(compat[member1][member2] == 1);
                                 assert(compat[member2][member1] == 1);
-                                assert(local_compat[member2][member1] == 1);
-                                assert(local_compat[member2][member1] == 1);
-                                printf(".");
+                                assert(localCompat[member2][member1] == 1);
+                                assert(localCompat[member2][member1] == 1);
+                                print(".");
                             }
                         }
                     }
                 }
             }
-            printf("..Done.\n");
-
-            return 0;
+            print("..Done.\n");
         }
-        public void make_a_local_copy(int[][] local_compat, int[][] compat, int nodesize)
+        private void makeALocalCopy(int[][] localCompat, int[][] compat, int nodesize)
         {
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN;
-
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                for (j = 0; j < nodesize; j++)
+                for (var j = 0; j < nodesize; j++)
                 {
-                    local_compat[i][j] = compat[i][j];
+                    localCompat[i][j] = compat[i][j];
                 }
             }
-            return;
         }
-        public int get_degree_of_a_node(int x, int nodesize, int[][] local_compat, int[] node_set)
+        private int getDegreeOfANode(int x, int nodesize, int[][] localCompat, int[] nodeSet)
         {
-            int j = CLIQUE_UNKNOWN, node_degree = CLIQUE_UNKNOWN;
-
-            node_degree = 0;
-            for (j = 0; j < nodesize; j++) /* compute node degrees */
+            var nodeDegree = 0;
+            for (var j = 0; j < nodesize; j++) /* compute node degrees */
             {
-                if (node_set[j] != CLIQUE_UNKNOWN)
+                if (nodeSet[j] != CliqueUnknown)
                 {
                     if (x != j)
                     {
-                        node_degree += local_compat[x][j];
+                        nodeDegree += localCompat[x][j];
                     }
                 }
             }
-
-            return node_degree;
+            return nodeDegree;
         }
-        public int select_new_node(int[][] local_compat, int nodesize, int[] node_set)
+        private int selectNewNode(int[][] localCompat, int nodesize, int[] nodeSet)
         {
             /*    if a node with priority, then pick that node 
              *      else a node with highest degree
@@ -164,129 +153,114 @@ namespace Synthesize.CliquePartition
              *           with highest neighbor wt
              *             if multiple pick one randomly.   
              */
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN;
-            int[][] degrees = new int[nodesize][];
-            int max_degree = CLIQUE_UNKNOWN;
-            int curr_max_degree = CLIQUE_UNKNOWN;
-            int curr_node_degree = CLIQUE_UNKNOWN;
-            int index = CLIQUE_UNKNOWN, curr_node = CLIQUE_UNKNOWN;
-            int max_curr_neighbors_wt = CLIQUE_UNKNOWN;
-            int curr_neighbors_wt = CLIQUE_UNKNOWN;
-            int max_node = CLIQUE_UNKNOWN;
+            int index;
+            var degrees = new int[nodesize][];
+            var maxNode = CliqueUnknown;
 
-            for (i = 0; i < nodesize; i++) /* initialize the degrees matrix */
+            for (var i = 0; i < nodesize; i++) /* initialize the degrees matrix */
             {
                 degrees[i] = new int[nodesize];
-                /* i dimension = node degree */
-                for (j = 0; j < nodesize; j++)
+                for (var j = 0; j < nodesize; j++)
                 {
                     /* j dimension = node with degree=i */
-                    degrees[i][j] = CLIQUE_UNKNOWN;
+                    degrees[i][j] = CliqueUnknown;
                 }
             }
 
-            curr_max_degree = 0;
-            curr_node_degree = 0;
-
-            for (i = 0; i < nodesize; i++) /* for each node do */
+            var currMaxDegree = 0;
+            for (var i = 0; i < nodesize; i++) /* for each node do */
             {
-                if (node_set[i] != CLIQUE_UNKNOWN) /* if the node is still in N */
+                if (nodeSet[i] != CliqueUnknown) /* if the node is still in N */
                 {
-                    curr_node_degree = get_degree_of_a_node(i, nodesize, local_compat, node_set);
+                    var currNodeDegree = getDegreeOfANode(i, nodesize, localCompat, nodeSet);
 
 #if DEBUG
-                    printf(" node=%d curr_node_degree = %d \n", i, curr_node_degree);
+                    print(" node=%d curr_node_degree = %d \n", i, currNodeDegree);
 #endif
-                    if (curr_node_degree > curr_max_degree)
+                    if (currNodeDegree > currMaxDegree)
                     {
-                        curr_max_degree = curr_node_degree;
+                        currMaxDegree = currNodeDegree;
                     }
 
                     /* append to a list of nodes with degree=curr_node_degree */
                     index = 0;
-                    while (degrees[curr_node_degree][index] != CLIQUE_UNKNOWN)
+                    while (degrees[currNodeDegree][index] != CliqueUnknown)
                     {
                         index++;
                     }
-                    degrees[curr_node_degree][index] = i; /* register this node */
+                    degrees[currNodeDegree][index] = i; /* register this node */
                 }
             }
 
             /* for debugging purposes.. 
-            for (i=0; i<nodesize; i++) 
+            for (i = 0; i < nodesize; i++) 
             {  
-                for (j=0; j<nodesize; j++)  
+                for (j = 0; j < nodesize; j++)  
                 {  
-                    printf(" %d %d %d \n", i, j, degrees[i][j]);
+                    print(" %d %d %d \n", i, j, degrees[i][j]);
                 }
             }
             */
 
-            if (degrees[curr_max_degree][1] == CLIQUE_UNKNOWN) /* only one max node */
+            if (degrees[currMaxDegree][1] == CliqueUnknown) /* only one max node */
             {
-                max_node = degrees[curr_max_degree][0];
+                maxNode = degrees[currMaxDegree][0];
             }
-            else if (degrees[curr_max_degree][1] != CLIQUE_UNKNOWN) /* multiple max nodes */
+            else if (degrees[currMaxDegree][1] != CliqueUnknown) /* multiple max nodes */
             {
-                index = 0;
-                max_curr_neighbors_wt = 0;
+                var maxCurrNeighborsWt = 0;
 
                 for (index = 0; index < nodesize; index++)
                 /* go through all nodes with curr_max_degree*/
                 {
-                    if (degrees[curr_max_degree][index] != CLIQUE_UNKNOWN)
+                    if (degrees[currMaxDegree][index] != CliqueUnknown)
                     /* not end of list of the nodes with curr_max_degree */
                     {
-                        curr_neighbors_wt = 0;
-                        curr_node = degrees[curr_max_degree][index];
+                        var currNeighborsWt = 0;
+                        var currNode = degrees[currMaxDegree][index];
 
                         /* get cumulative neighbor weight for this node */
-                        curr_neighbors_wt += get_degree_of_a_node(curr_node, nodesize, local_compat, node_set);
+                        currNeighborsWt += getDegreeOfANode(currNode, nodesize, localCompat, nodeSet);
 #if DEBUG
-                        printf("curr_node = %d curr_neighbors_wt=%d\n", curr_node, curr_neighbors_wt);
+                        print("curr_node = %d curr_neighbors_wt=%d\n", currNode, currNeighborsWt);
 #endif
                         /* Is the local_compat, node_set consistent? */
-                        if (curr_neighbors_wt >= max_curr_neighbors_wt)
+                        if (currNeighborsWt >= maxCurrNeighborsWt)
                         {
-                            max_curr_neighbors_wt = curr_neighbors_wt;
-                            max_node = curr_node;
+                            maxCurrNeighborsWt = currNeighborsWt;
+                            maxNode = currNode;
                         }
                     }
                 }
             }
 #if DEBUG
-            printf(" curr_max_degree = %d max_node= %d\n", curr_max_degree, max_node);
+            print(" curr_max_degree = %d max_node= %d\n", currMaxDegree, maxNode);
 #endif
 
-            return max_node;
+            return maxNode;
         }
-        public int form_setY(int[] setY, int[] current_clique, int[][] local_compat, int nodesize, int[] node_set)
+        private int formSetY(int[] setY, int[] currentClique, int[][] localCompat, int nodesize, int[] nodeSet)
         {
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN, index = CLIQUE_UNKNOWN;
-            int setY_size = CLIQUE_UNKNOWN;
-            int compatibility = CLIQUE_UNKNOWN;
-
-            index = 0;
-            setY_size = 0;
+            var index = 0;
 
             /* reset set_Y */
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                setY[i] = CLIQUE_UNKNOWN;
+                setY[i] = CliqueUnknown;
             }
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                compatibility = CLIQUE_TRUE;
-                if (node_set[i] != CLIQUE_UNKNOWN)
+                var compatibility = CliqueTrue;
+                if (nodeSet[i] != CliqueUnknown)
                 {
-                    for (j = 0; j < nodesize; j++)
+                    for (var j = 0; j < nodesize; j++)
                     {
-                        if (current_clique[j] != CLIQUE_UNKNOWN)
+                        if (currentClique[j] != CliqueUnknown)
                         {
-                            if (local_compat[current_clique[j]][i] == 0)
+                            if (localCompat[currentClique[j]][i] == 0)
                             {
-                                compatibility = CLIQUE_FALSE;
+                                compatibility = CliqueFalse;
                                 break;
                             }
                         }
@@ -295,63 +269,52 @@ namespace Synthesize.CliquePartition
                             break;
                         }
                     }
-                    if (compatibility == CLIQUE_TRUE)
+                    if (compatibility == CliqueTrue)
                     {
                         setY[index] = i;
                         index++;
                     }
                 }
             }
-            setY_size = index;
-
-            return setY_size;
+            return index;
         }
-        public void print_setY(int[] setY)
+        private void printSetY(int[] setY)
         {
-            int index = CLIQUE_UNKNOWN;
-
-            index = 0;
-            printf(" setY = {");
-            while (setY[index] != CLIQUE_UNKNOWN)
+            var index = 0;
+            print(" setY = {");
+            while (setY[index] != CliqueUnknown)
             {
-                printf(" %d ", setY[index]);
+                print(" %d ", setY[index]);
                 index++;
             }
-            printf("}\n");
+            print("}\n");
         }
-        public void form_set_Y1(int nodesize, int[] set_Y, int[] set_Y1, int[][] sets_I_y, int[] node_set)
+        private void formSetY1(int nodesize, int[] setY, int[] setY1, int[][] setsIy)
         {
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN, k = CLIQUE_UNKNOWN;
-            int[] cards = null;
-            int min_val = CLIQUE_UNKNOWN;
-            int curr_index = CLIQUE_UNKNOWN;
-            int curr_y = CLIQUE_UNKNOWN;
+            var cards = new int[nodesize];
 
-            cards = new int[nodesize];
-
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                set_Y1[i] = CLIQUE_UNKNOWN;
+                setY1[i] = CliqueUnknown;
                 cards[i] = 0;
             }
 
             /* Get the cardinalities of  intersection(I_y, setY) 
                for each y in I_y */
-            for (i = 0; i < nodesize; i++) /* for each y in I_y */
+            for (var i = 0; i < nodesize; i++) /* for each y in I_y */
             {
-                if (set_Y[i] != CLIQUE_UNKNOWN)
+                if (setY[i] != CliqueUnknown)
                 {
-                    curr_y = set_Y[i];
-
-                    for (j = 0; j < nodesize; j++) /* for each node in I_y of curr_y*/
+                    var currY = setY[i];
+                    for (var j = 0; j < nodesize; j++) /* for each node in I_y of curr_y*/
                     {
-                        if (sets_I_y[curr_y][j] != CLIQUE_UNKNOWN)
+                        if (setsIy[currY][j] != CliqueUnknown)
                         {
-                            for (k = 0; k < nodesize; k++) /* for each node in set_Y */
+                            for (var k = 0; k < nodesize; k++) /* for each node in set_Y */
                             {
-                                if (set_Y[k] != CLIQUE_UNKNOWN)
+                                if (setY[k] != CliqueUnknown)
                                 {
-                                    if (sets_I_y[i][j] == set_Y[k])
+                                    if (setsIy[i][j] == setY[k])
                                     {
                                         cards[i]++;
                                     }
@@ -370,59 +333,55 @@ namespace Synthesize.CliquePartition
                 }
             }
 
-            min_val = cards[0];
-            for (i = 0; i < nodesize; i++)
+            var minVal = cards[0];
+            for (var i = 0; i < nodesize; i++)
             {
-                if (set_Y[i] != CLIQUE_UNKNOWN)
+                if (setY[i] != CliqueUnknown)
                 {
-                    if (cards[i] < min_val)
+                    if (cards[i] < minVal)
                     {
-                        min_val = cards[i];
+                        minVal = cards[i];
                     }
                 }
             }
 
 #if DEBUG
-            printf(" min_val = %d ", min_val);
+            print(" min_val = %d ", minVal);
 #endif
 
-            curr_index = 0;
-            for (i = 0; i < nodesize; i++)
+            var currIndex = 0;
+            for (var i = 0; i < nodesize; i++)
             {
-                if (cards[i] == min_val)
+                if (cards[i] == minVal)
                 {
-                    set_Y1[curr_index] = set_Y[i];
-                    curr_index++;
+                    setY1[currIndex] = setY[i];
+                    currIndex++;
                 }
             }
 
 #if DEBUG
-            printf(" Set Y1 = { ");
-            for (i = 0; i < nodesize; i++)
+            print(" Set Y1 = { ");
+            for (var i = 0; i < nodesize; i++)
             {
-                if (set_Y1[i] != CLIQUE_UNKNOWN)
+                if (setY1[i] != CliqueUnknown)
                 {
-                    printf(" %d ", set_Y1[i]);
+                    print(" %d ", setY1[i]);
                 }
             }
-            printf(" }\n");
+            print(" }\n");
 #endif
-
-            return;
         }
-        public void form_set_Y2(int nodesize, int[] set_Y2, int[] set_Y1, int[] sizes_of_sets_I_y)
+        private void formSetY2(int nodesize, int[] setY2, int[] setY1, int[] sizesOfSetsIy)
         {
-            int i = CLIQUE_UNKNOWN;
-            int max_val = CLIQUE_UNKNOWN;
-            int curr_index = CLIQUE_UNKNOWN;
+            var maxVal = CliqueUnknown;
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                if (set_Y1[i] != CLIQUE_UNKNOWN)
+                if (setY1[i] != CliqueUnknown)
                 {
-                    if (sizes_of_sets_I_y[set_Y1[i]] > max_val)
+                    if (sizesOfSetsIy[setY1[i]] > maxVal)
                     {
-                        max_val = sizes_of_sets_I_y[set_Y1[i]];
+                        maxVal = sizesOfSetsIy[setY1[i]];
                     }
                 }
                 else
@@ -431,15 +390,15 @@ namespace Synthesize.CliquePartition
                 }
             }
 
-            curr_index = 0;
-            for (i = 0; i < nodesize; i++)
+            var currIndex = 0;
+            for (var i = 0; i < nodesize; i++)
             {
-                if (set_Y1[i] != CLIQUE_UNKNOWN)
+                if (setY1[i] != CliqueUnknown)
                 {
-                    if (sizes_of_sets_I_y[set_Y1[i]] == max_val)
+                    if (sizesOfSetsIy[setY1[i]] == maxVal)
                     {
-                        set_Y2[curr_index] = set_Y1[i];
-                        curr_index++;
+                        setY2[currIndex] = setY1[i];
+                        currIndex++;
                     }
                 }
                 else
@@ -449,73 +408,62 @@ namespace Synthesize.CliquePartition
             }
 
 #if DEBUG
-            printf(" curr_index = %d   max_val = %d ", curr_index, max_val);
-            printf(" Set Y2 = { ");
-            for (i = 0; i < nodesize; i++)
+            print(" curr_index = %d   max_val = %d ", currIndex, maxVal);
+            print(" Set Y2 = { ");
+            for (var i = 0; i < nodesize; i++)
             {
-                if (set_Y2[i] != CLIQUE_UNKNOWN)
+                if (setY2[i] != CliqueUnknown)
                 {
-                    printf(" %d ", set_Y2[i]);
+                    print(" %d ", setY2[i]);
                 }
                 else
                 {
                     break;
                 }
             }
-            printf(" }\n");
+            print(" }\n");
 #endif
-
-            return;
         }
-        public int pick_a_node_to_merge(int[] setY, int[][] local_compat, int[] node_set, int nodesize)
+        private int pickANodeToMerge(int[] setY, int[][] localCompat, int[] nodeSet, int nodesize)
         {
-            int[][] sets_I_y = null;
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN;
-            int[] curr_indexes = null;
-            int[] set_Y1 = null;
-            int[] set_Y2 = null;
-            int[] sizes_of_sets_I_y = null;
-            int min_val = CLIQUE_UNKNOWN;
-            int new_node = CLIQUE_UNKNOWN;
-            int curr_node_in_setY = CLIQUE_UNKNOWN;
-
+            var newNode = CliqueUnknown;
             /* dynamically allocate memory for sets_I_y array */
 
-            sets_I_y = new int[nodesize][];
+            var setsIy = new int[nodesize][];
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                sets_I_y[i] = new int[nodesize];
+                setsIy[i] = new int[nodesize];
             }
 
-            curr_indexes = new int[nodesize];
-            sizes_of_sets_I_y = new int[nodesize];
+            var currIndexes = new int[nodesize];
+            var sizesOfSetsIy = new int[nodesize];
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                curr_indexes[i] = 0;
-                sizes_of_sets_I_y[i] = 0;
-                for (j = 0; j < nodesize; j++)
+                currIndexes[i] = 0;
+                sizesOfSetsIy[i] = 0;
+                for (var j = 0; j < nodesize; j++)
                 {
-                    sets_I_y[i][j] = CLIQUE_UNKNOWN;
+                    setsIy[i][j] = CliqueUnknown;
                 }
             }
 
             /* form I_y sets */
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                if (setY[i] != CLIQUE_UNKNOWN) /* for each y in Y do */
+                if (setY[i] != CliqueUnknown) /* for each y in Y do */
                 {
-                    for (j = 0; j < nodesize; j++)
+                    for (var j = 0; j < nodesize; j++)
                     {
-                        if (node_set[j] != CLIQUE_UNKNOWN)
+                        if (nodeSet[j] != CliqueUnknown)
                         {
                             /* if this node is still in set N */
-                            if (local_compat[setY[i]][j] != 1)
+                            if (localCompat[setY[i]][j] != 1)
                             {
-                                sets_I_y[setY[i]][curr_indexes[setY[i]]] = j;
-                                curr_indexes[setY[i]]++;
+                                setsIy[setY[i]][currIndexes[setY[i]]] = j;
+                                currIndexes[setY[i]]++;
                             }
                         }
                     }
@@ -526,238 +474,219 @@ namespace Synthesize.CliquePartition
                 }
             }
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                if (setY[i] != CLIQUE_UNKNOWN) /* for each y in Y do */
+                if (setY[i] != CliqueUnknown) /* for each y in Y do */
                 {
-                    curr_node_in_setY = setY[i];
+                    var currNodeInSetY = setY[i];
 
                     /* copy curr index into sizes */
-                    sizes_of_sets_I_y[curr_node_in_setY] = curr_indexes[curr_node_in_setY];
+                    sizesOfSetsIy[currNodeInSetY] = currIndexes[currNodeInSetY];
 
                     /* print all I_y sets */
 #if DEBUG
-                    printf(" i= %d  nodeno= %d, curr_index = %d  ", i, curr_node_in_setY, curr_indexes[curr_node_in_setY]);
+                    print(" i= %d  nodeno= %d, curr_index = %d  ", i, currNodeInSetY, currIndexes[currNodeInSetY]);
 
-                    print_setY(sets_I_y[curr_node_in_setY]);
+                    printSetY(setsIy[currNodeInSetY]);
 #endif
                 }
             }
 
             /* form set_Y1 */
-            set_Y1 = new int[nodesize];
-            for (i = 0; i < nodesize; i++)
+            var setY1 = new int[nodesize];
+            for (var i = 0; i < nodesize; i++)
             {
-                set_Y1[i] = CLIQUE_UNKNOWN;
+                setY1[i] = CliqueUnknown;
             }
-            form_set_Y1(nodesize, setY, set_Y1, sets_I_y, node_set);
+            formSetY1(nodesize, setY, setY1, setsIy);
 
             /* form set_Y2 */
-            set_Y2 = new int[nodesize];
-            for (i = 0; i < nodesize; i++)
+            var setY2 = new int[nodesize];
+            for (var i = 0; i < nodesize; i++)
             {
-                set_Y2[i] = CLIQUE_UNKNOWN;
+                setY2[i] = CliqueUnknown;
             }
-            form_set_Y2(nodesize, set_Y2, set_Y1, sizes_of_sets_I_y);
+            formSetY2(nodesize, setY2, setY1, sizesOfSetsIy);
 
-            if (set_Y2[0] != CLIQUE_UNKNOWN)
+            if (setY2[0] != CliqueUnknown)
             {
-                new_node = set_Y2[0];
+                newNode = setY2[0];
             }
 
-            return new_node;
+            return newNode;
         }
-        public void init_clique_set()
+        private void initCliqueSet()
         {
-            int i = UNKNOWN, j = UNKNOWN;
-            printf("\n Initializing the clique set..");
-
-            for (i = 0; i < MAXCLIQUES; i++)
+            print("\n Initializing the clique set..");
+            for (var i = 0; i < Maxcliques; i++)
             {
-                clique_set[i].size = UNKNOWN;
-                for (j = 0; j < MAXCLIQUES; j++)
+                CliqueSet[i].Size = Unknown;
+                for (var j = 0; j < Maxcliques; j++)
                 {
-                    clique_set[i].members[j] = UNKNOWN;
+                    CliqueSet[i].Members[j] = Unknown;
                 }
             }
-            printf("..Done.\n");
+            print("..Done.\n");
         }
-        public void print_clique_set()
+        private void printCliqueSet()
         {
-            int i = UNKNOWN, j = UNKNOWN;
+            print("\n Clique Set: \n");
 
-            printf("\n Clique Set: \n");
-
-            for (i = 0; i < MAXCLIQUES; i++)
+            for (var i = 0; i < Maxcliques; i++)
             {
-                if (clique_set[i].size == UNKNOWN)
+                if (CliqueSet[i].Size == Unknown)
                 {
                     break;
                 }
 
-                printf("\tClique #%d (size = %d) = { ", i, clique_set[i].size);
+                print("\tClique #%d (size = %d) = { ", i, CliqueSet[i].Size);
 
-                for (j = 0; j < MAXCLIQUES; j++)
+                for (var j = 0; j < Maxcliques; j++)
                 {
-                    if (clique_set[i].members[j] != UNKNOWN)
+                    if (CliqueSet[i].Members[j] != Unknown)
                     {
-                        printf(" %d ", clique_set[i].members[j]);
+                        print(" %d ", CliqueSet[i].Members[j]);
                     }
                     else
                     {
                         break;
                     }
                 }
-                printf(" }\n");
+                print(" }\n");
             }
-            printf("\n");
+            print("\n");
         }
-        public int clique_partition(int[][] compat, int nodesize)
+        public void cliquePartition(int[][] compat, int nodesize)
         {
-            int[][] local_compat = null;
-            int[] current_clique = null;
-            int[] node_set = null;
-            int[] setY = null;
-            int i = CLIQUE_UNKNOWN, j = CLIQUE_UNKNOWN;
-            int node_x = CLIQUE_UNKNOWN, node_y = CLIQUE_UNKNOWN;
-            int setY_cardinality = CLIQUE_UNKNOWN;
-            int new_node = CLIQUE_UNKNOWN;
-            int curr_index = CLIQUE_UNKNOWN;
-            int size_N = CLIQUE_UNKNOWN;
-            int clique_index = CLIQUE_UNKNOWN;
-            /*int nodesize=CLIQUE_UNKNOWN;*/
+            print("\n");
+            print("**************************************\n");
+            print(" *       Clique Partitioner         *\n");
+            print("**************************************\n");
+            print("\nEntering Clique Partitioner.. \n");
 
-            printf("\n");
-            printf("**************************************\n");
-            printf(" *       Clique Partitioner         *\n");
-            printf("**************************************\n");
-            printf("\nEntering Clique Partitioner.. \n");
-
-            input_sanity_check(compat, nodesize);
+            inputSanityCheck(compat, nodesize);
 
             /* dynamically allocate memory for local copy */
 
-            local_compat = new int[nodesize][];
+            var localCompat = new int[nodesize][];
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                local_compat[i] = new int[nodesize];
+                localCompat[i] = new int[nodesize];
             }
 
-            make_a_local_copy(local_compat, compat, nodesize);
+            makeALocalCopy(localCompat, compat, nodesize);
 
-            printf(" You entered the compatability array: \n");
-            for (i = 0; i < nodesize; i++)
+            print(" You entered the compatibility array: \n");
+            for (var i = 0; i < nodesize; i++)
             {
-                printf("\t");
-                for (j = 0; j < nodesize; j++)
+                print("\t");
+                for (var j = 0; j < nodesize; j++)
                 {
-                    printf("%d ", local_compat[i][j]);
+                    print("%d ", localCompat[i][j]);
                 }
-                printf("\n");
+                print("\n");
             }
 
-            init_clique_set();
+            initCliqueSet();
 
             /* allocate memory for current clique & initialize to unknown values*/
             /* - current_clique has the indices of nodes that are compatible with each other*/
             /* - A node i is in node_set if node_set[i] = i */
 
-            current_clique = new int[nodesize];
-            node_set = new int[nodesize];
-            setY = new int[nodesize];
+            var currentClique = new int[nodesize];
+            var nodeSet = new int[nodesize];
+            var setY = new int[nodesize];
 
-            for (i = 0; i < nodesize; i++)
+            for (var i = 0; i < nodesize; i++)
             {
-                current_clique[i] = CLIQUE_UNKNOWN;
-                node_set[i] = i;
-                setY[i] = CLIQUE_UNKNOWN;
+                currentClique[i] = CliqueUnknown;
+                nodeSet[i] = i;
+                setY[i] = CliqueUnknown;
             }
 
-            size_N = nodesize;
-            curr_index = 0; /* reset the index to start for current clique */
+            var sizeN = nodesize;
+            var currIndex = 0; /* reset the index to start for current clique */
 
-            while (size_N > 0) /* i.e still cliques to be formed */
+            while (sizeN > 0) /* i.e still cliques to be formed */
             {
 #if DEBUG
-                printf("=====================================================\n");
-                printf(" size_N = %d  node_set = { ", size_N);
-                for (i = 0; i < nodesize; i++)
+                print("=====================================================\n");
+                print(" size_N = %d  node_set = { ", sizeN);
+                for (var i = 0; i < nodesize; i++)
                 {
-                    printf(" %d ", node_set[i]);
+                    print(" %d ", nodeSet[i]);
                 }
-                printf(" }\n");
+                print(" }\n");
 #endif
 
-                if (current_clique[0] == CLIQUE_UNKNOWN) /* new clique formation */
+                if (currentClique[0] == CliqueUnknown) /* new clique formation */
                 {
-                    node_x = select_new_node(local_compat, nodesize, node_set);
+                    var nodeX = selectNewNode(localCompat, nodesize, nodeSet);
 #if DEBUG
-                    printf(" Node x = %d \n", node_x); /* first node in the clique */
+                    print(" Node x = %d \n", nodeX); /* first node in the clique */
 #endif
-                    current_clique[curr_index] = node_x;
-                    node_set[node_x] = CLIQUE_UNKNOWN; /* remove node_x from N i.e node_set */
-                    curr_index++;
+                    currentClique[currIndex] = nodeX;
+                    nodeSet[nodeX] = CliqueUnknown; /* remove node_x from N i.e node_set */
+                    currIndex++;
                 }
 
-                setY_cardinality = CLIQUE_UNKNOWN;
-                setY_cardinality = form_setY(setY, current_clique, local_compat, nodesize, node_set);
+                var setYCardinality = formSetY(setY, currentClique, localCompat, nodesize, nodeSet);
 #if DEBUG
-                print_setY(setY);
+                printSetY(setY);
 #endif
-                /* printf (" Set Y cardinality = %d \n", setY_cardinality);*/
+                /* print (" Set Y cardinality = %d \n", setY_cardinality);*/
 
-                if (setY_cardinality == 0)
+                if (setYCardinality == 0)
                 /* No possible nodes for merger; 
                    declare current_cliqueas complete */
                 {
                     /* copy the current clique into central datastructure */
-                    clique_index = 0;
-                    while (clique_set[clique_index].size != UNKNOWN)
+                    var cliqueIndex = 0;
+                    while (CliqueSet[cliqueIndex].Size != Unknown)
                     {
-                        clique_index++;
+                        cliqueIndex++;
                     }
 
-                    clique_set[clique_index].size = 0;
+                    CliqueSet[cliqueIndex].Size = 0;
 
-                    printf(" A clique is found!! Clique = { ");
-                    for (i = 0; i < nodesize; i++)
+                    print(" A clique is found!! Clique = { ");
+                    for (var i = 0; i < nodesize; i++)
                     {
-                        if (current_clique[i] != CLIQUE_UNKNOWN)
+                        if (currentClique[i] != CliqueUnknown)
                         {
-                            clique_set[clique_index].members[i] = current_clique[i];
+                            CliqueSet[cliqueIndex].Members[i] = currentClique[i];
 
-                            printf(" %d ", current_clique[i]);
-                            node_set[current_clique[i]] = CLIQUE_UNKNOWN; /* remove this node from the node list */
-                            current_clique[i] = CLIQUE_UNKNOWN;
-                            size_N = (size_N - 1);
-                            (clique_set[clique_index].size)++;
+                            print(" %d ", currentClique[i]);
+                            nodeSet[currentClique[i]] = CliqueUnknown; /* remove this node from the node list */
+                            currentClique[i] = CliqueUnknown;
+                            sizeN--;
+                            CliqueSet[cliqueIndex].Size++;
                         }
                         else
                         {
                             break;
                         }
                     }
-                    printf(" }\n");
-                    curr_index = 0; /* reset the curr_index for the next clique */
+                    print(" }\n");
+                    currIndex = 0; /* reset the curr_index for the next clique */
                 }
                 else
                 {
-                    node_y = pick_a_node_to_merge(setY, local_compat, node_set, nodesize);
-                    current_clique[curr_index] = node_y;
-                    node_set[node_y] = CLIQUE_UNKNOWN;
+                    var nodeY = pickANodeToMerge(setY, localCompat, nodeSet, nodesize);
+                    currentClique[currIndex] = nodeY;
+                    nodeSet[nodeY] = CliqueUnknown;
 #if DEBUG
-                    printf(" y (new node) = %d \n", node_y);
+                    print(" y (new node) = %d \n", nodeY);
 #endif
-                    curr_index++;
+                    currIndex++;
                 }
             }
-            output_sanity_check(nodesize, local_compat, compat);
-            printf("\n Final Clique Partitioning Results:\n");
-            print_clique_set();
-            printf("Exiting Clique Partitioner.. Bye.\n");
-            printf("**************************************\n\n");
-            return 1;
+            outputSanityCheck(localCompat, compat);
+            print("\n Final Clique Partitioning Results:\n");
+            printCliqueSet();
+            print("Exiting Clique Partitioner.. Bye.\n");
+            print("**************************************\n\n");
         }
     }
 }

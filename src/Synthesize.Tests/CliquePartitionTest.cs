@@ -58,7 +58,7 @@ namespace Synthesize.Tests
 
             var helper = new CliqueHelper();
 
-            var result = helper.clique_partition(compat, compat.Length);
+            helper.cliquePartition(compat, compat.Length);
         }
     }
 }
