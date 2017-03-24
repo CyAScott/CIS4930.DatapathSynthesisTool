@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Synthesize.CliquePartition;
 
 namespace Synthesize.Tests
@@ -55,10 +50,8 @@ namespace Synthesize.Tests
             compat[8][0] = 0; compat[8][1] = 0; compat[8][2] = 0;
             compat[8][3] = 0; compat[8][4] = 0; compat[8][5] = 0;
             compat[8][6] = 0; compat[8][7] = 0; compat[8][8] = 1;
-
-            var helper = new CliqueHelper();
-
-            helper.cliquePartition(compat, compat.Length);
+            
+            CliqueHelper.CliquePartition(compat);
         }
     }
 }

@@ -7,133 +7,85 @@ namespace Synthesize.CliquePartition
     /// <summary>
     /// Ported from the clique_partition.c file in this repo.
     /// </summary>
-    public class CliqueHelper
+    public static class CliqueHelper
     {
-        public const int Unknown = -12345;
-        public const int Maxcliques = 200;
-
-        public const int CliqueUnknown = -12345;
-        public const int CliqueTrue = 100;
-        public const int CliqueFalse = 110;
-
-        public class Clique
-        {
-            public int[] Members = new int[Maxcliques];/* members of the clique */
-            public int Size;/* number of members in the clique */
-        }
-        public Clique[] CliqueSet = Enumerable
-            .Range(0, Maxcliques)
-            .Select(index => new Clique())
-            .ToArray();
-        
-        public bool EnableConsolePrinting { get; set; } = true;
-        private void print(string text, params int[] numbers)
-        {
-            if (EnableConsolePrinting)
-            {
-                var index = 0;
-                text = Regex.Replace(text, "%d", match => index < numbers.Length ? numbers[index++].ToString() : "%d");
-                Console.Write(text);
-            }
-        }
-        private void exit(int exitCode)
-        {
-            throw new InvalidProgramException("The program should exit with code: " + exitCode);
-        }
         // ReSharper disable once UnusedParameter.Local
-        private void assert(bool test)
+        private static void assert(bool test)
         {
             if (!test)
             {
                 throw new InvalidProgramException("The assert failed.");
             }
         }
-        private void inputSanityCheck(int[][] compat, int arrayDimension)
+        private static void print(bool enableConsolePrinting, string text, params int[] numbers)
         {
-            /* Verifies whether the compat array passed is valid array
-             *  (1) Is each array entry =0 or 1?
-             *  (2) Is the matrix symmetric
-             * Note that diagonal entries can be either 0 or 1.
-             */
-
-            print(" Checking the sanity of the input..");
-
-            for (var i = 0; i < arrayDimension; i++)
+            if (enableConsolePrinting)
             {
-                for (var j = 0; j < arrayDimension; j++)
-                {
-                    if ((compat[i][j] != 1) && (compat[i][j] != 0))
-                    {
-                        print(" %d \n", compat[i][j]);
-                        print("The value of an array element is other than 1 or 0. Aborting..\n");
-                        exit(0);
-                    }
-                    if (compat[i][j] != compat[j][i])
-                    {
-                        print("The compatibility array is NOT symmetric at (%d,%d) and (%d,%d)! Aborting..\n ", i, j, j, i);
-                        exit(0);
-                    }
-                    print(".");
-                }
+                var index = 0;
+                text = Regex.Replace(text, "%d", match => index < numbers.Length ? numbers[index++].ToString() : "%d");
+                Console.Write(text);
+            }
+        }
+        private static void exit(int exitCode)
+        {
+            throw new InvalidProgramException("The program should exit with code: " + exitCode);
+        }
+        
+        public class Clique
+        {
+            public int[] Members = new int[Maxcliques];/* members of the clique */
+            public int Size;/* number of members in the clique */
+        }
+
+        public const int CliqueFalse = 110;
+        public const int CliqueTrue = 100;
+        public const int CliqueUnknown = -12345;
+        public const int Maxcliques = 200;
+        public const int Unknown = -12345;
+
+        private static int formSetY(int[] setY, int[] currentClique, int[][] localCompat, int[] nodeSet)
+        {
+            var index = 0;
+
+            /* reset set_Y */
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                setY[i] = CliqueUnknown;
             }
 
-            print("Done.\n");
-        }
-        private void outputSanityCheck(int[][] localCompat, int[][] compat)
-        {
-            /* 
-             * Verifies the results of the heuristic.
-             * for each clique do
-             *   if the clique size is UNKNOWN
-             *      break
-             *   else
-             *     for every pair of members x and y in clique do
-             *       assert  compat[x][y] = 1 and compat[y][x] = 1
-             *     end for
-             *   end if
-             * end for
-             */
-            print("\n Verifying the results of the clique partitioning algorithm..");
-            for (var i = 0; i < Maxcliques; i++)
+            for (var i = 0; i < localCompat.Length; i++)
             {
-                if (CliqueSet[i].Size != Unknown)
+                var compatibility = CliqueTrue;
+                if (nodeSet[i] != CliqueUnknown)
                 {
-                    assert(CliqueSet[i].Size > 0);
-                    for (var j = 0; j < CliqueSet[i].Size; j++)
+                    for (var j = 0; j < localCompat.Length; j++)
                     {
-                        for (var k = 0; k < CliqueSet[i].Size; k++)
+                        if (currentClique[j] != CliqueUnknown)
                         {
-                            if (j != k)
+                            if (localCompat[currentClique[j]][i] == 0)
                             {
-                                var member1 = CliqueSet[i].Members[j];
-                                var member2 = CliqueSet[i].Members[k];
-
-                                assert(compat[member1][member2] == 1);
-                                assert(compat[member2][member1] == 1);
-                                assert(localCompat[member2][member1] == 1);
-                                assert(localCompat[member2][member1] == 1);
-                                print(".");
+                                compatibility = CliqueFalse;
+                                break;
                             }
                         }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    if (compatibility == CliqueTrue)
+                    {
+                        setY[index] = i;
+                        index++;
                     }
                 }
             }
-            print("..Done.\n");
+            return index;
         }
-        private void makeALocalCopy(int[][] localCompat, int[][] compat, int nodesize)
-        {
-            for (var i = 0; i < nodesize; i++)
-            {
-                for (var j = 0; j < nodesize; j++)
-                {
-                    localCompat[i][j] = compat[i][j];
-                }
-            }
-        }
-        private int getDegreeOfANode(int x, int nodesize, int[][] localCompat, int[] nodeSet)
+        private static int getDegreeOfANode(int x, int[][] localCompat, int[] nodeSet)
         {
             var nodeDegree = 0;
-            for (var j = 0; j < nodesize; j++) /* compute node degrees */
+            for (var j = 0; j < localCompat.Length; j++) /* compute node degrees */
             {
                 if (nodeSet[j] != CliqueUnknown)
                 {
@@ -145,7 +97,98 @@ namespace Synthesize.CliquePartition
             }
             return nodeDegree;
         }
-        private int selectNewNode(int[][] localCompat, int nodesize, int[] nodeSet)
+        private static int pickANodeToMerge(bool enableConsolePrinting, int[] setY, int[][] localCompat, int[] nodeSet)
+        {
+            var newNode = CliqueUnknown;
+            /* dynamically allocate memory for sets_I_y array */
+
+            var setsIy = new int[localCompat.Length][];
+
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                setsIy[i] = new int[localCompat.Length];
+            }
+
+            var currIndexes = new int[localCompat.Length];
+            var sizesOfSetsIy = new int[localCompat.Length];
+
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                currIndexes[i] = 0;
+                sizesOfSetsIy[i] = 0;
+                for (var j = 0; j < localCompat.Length; j++)
+                {
+                    setsIy[i][j] = CliqueUnknown;
+                }
+            }
+
+            /* form I_y sets */
+
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                if (setY[i] != CliqueUnknown) /* for each y in Y do */
+                {
+                    for (var j = 0; j < localCompat.Length; j++)
+                    {
+                        if (nodeSet[j] != CliqueUnknown)
+                        {
+                            /* if this node is still in set N */
+                            if (localCompat[setY[i]][j] != 1)
+                            {
+                                setsIy[setY[i]][currIndexes[setY[i]]] = j;
+                                currIndexes[setY[i]]++;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    break; /* end of setY */
+                }
+            }
+
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                if (setY[i] != CliqueUnknown) /* for each y in Y do */
+                {
+                    var currNodeInSetY = setY[i];
+
+                    /* copy curr index into sizes */
+                    sizesOfSetsIy[currNodeInSetY] = currIndexes[currNodeInSetY];
+
+                    /* print all I_y sets */
+#if DEBUG
+                    print(enableConsolePrinting, " i= %d  nodeno= %d, curr_index = %d  ", i, currNodeInSetY, currIndexes[currNodeInSetY]);
+
+                    printSetY(enableConsolePrinting, setsIy[currNodeInSetY]);
+#endif
+                }
+            }
+
+            /* form set_Y1 */
+            var setY1 = new int[localCompat.Length];
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                setY1[i] = CliqueUnknown;
+            }
+            formSetY1(enableConsolePrinting, setY, setY1, setsIy);
+
+            /* form set_Y2 */
+            var setY2 = new int[localCompat.Length];
+            for (var i = 0; i < localCompat.Length; i++)
+            {
+                setY2[i] = CliqueUnknown;
+            }
+            formSetY2(enableConsolePrinting, setY2, setY1, sizesOfSetsIy);
+
+            if (setY2[0] != CliqueUnknown)
+            {
+                newNode = setY2[0];
+            }
+
+            return newNode;
+        }
+        private static int selectNewNode(bool enableConsolePrinting, int[][] localCompat, int[] nodeSet)
         {
             /*    if a node with priority, then pick that node 
              *      else a node with highest degree
@@ -154,13 +197,13 @@ namespace Synthesize.CliquePartition
              *             if multiple pick one randomly.   
              */
             int index;
-            var degrees = new int[nodesize][];
+            var degrees = new int[localCompat.Length][];
             var maxNode = CliqueUnknown;
 
-            for (var i = 0; i < nodesize; i++) /* initialize the degrees matrix */
+            for (var i = 0; i < localCompat.Length; i++) /* initialize the degrees matrix */
             {
-                degrees[i] = new int[nodesize];
-                for (var j = 0; j < nodesize; j++)
+                degrees[i] = new int[localCompat.Length];
+                for (var j = 0; j < localCompat.Length; j++)
                 {
                     /* j dimension = node with degree=i */
                     degrees[i][j] = CliqueUnknown;
@@ -168,14 +211,14 @@ namespace Synthesize.CliquePartition
             }
 
             var currMaxDegree = 0;
-            for (var i = 0; i < nodesize; i++) /* for each node do */
+            for (var i = 0; i < localCompat.Length; i++) /* for each node do */
             {
                 if (nodeSet[i] != CliqueUnknown) /* if the node is still in N */
                 {
-                    var currNodeDegree = getDegreeOfANode(i, nodesize, localCompat, nodeSet);
+                    var currNodeDegree = getDegreeOfANode(i, localCompat, nodeSet);
 
 #if DEBUG
-                    print(" node=%d curr_node_degree = %d \n", i, currNodeDegree);
+                    print(enableConsolePrinting, " node=%d curr_node_degree = %d \n", i, currNodeDegree);
 #endif
                     if (currNodeDegree > currMaxDegree)
                     {
@@ -210,7 +253,7 @@ namespace Synthesize.CliquePartition
             {
                 var maxCurrNeighborsWt = 0;
 
-                for (index = 0; index < nodesize; index++)
+                for (index = 0; index < localCompat.Length; index++)
                 /* go through all nodes with curr_max_degree*/
                 {
                     if (degrees[currMaxDegree][index] != CliqueUnknown)
@@ -220,9 +263,9 @@ namespace Synthesize.CliquePartition
                         var currNode = degrees[currMaxDegree][index];
 
                         /* get cumulative neighbor weight for this node */
-                        currNeighborsWt += getDegreeOfANode(currNode, nodesize, localCompat, nodeSet);
+                        currNeighborsWt += getDegreeOfANode(currNode, localCompat, nodeSet);
 #if DEBUG
-                        print("curr_node = %d curr_neighbors_wt=%d\n", currNode, currNeighborsWt);
+                        print(enableConsolePrinting, "curr_node = %d curr_neighbors_wt=%d\n", currNode, currNeighborsWt);
 #endif
                         /* Is the local_compat, node_set consistent? */
                         if (currNeighborsWt >= maxCurrNeighborsWt)
@@ -234,66 +277,16 @@ namespace Synthesize.CliquePartition
                 }
             }
 #if DEBUG
-            print(" curr_max_degree = %d max_node= %d\n", currMaxDegree, maxNode);
+            print(enableConsolePrinting, " curr_max_degree = %d max_node= %d\n", currMaxDegree, maxNode);
 #endif
 
             return maxNode;
         }
-        private int formSetY(int[] setY, int[] currentClique, int[][] localCompat, int nodesize, int[] nodeSet)
+        private static void formSetY1(bool enableConsolePrinting, int[] setY, int[] setY1, int[][] setsIy)
         {
-            var index = 0;
+            var cards = new int[setY.Length];
 
-            /* reset set_Y */
-            for (var i = 0; i < nodesize; i++)
-            {
-                setY[i] = CliqueUnknown;
-            }
-
-            for (var i = 0; i < nodesize; i++)
-            {
-                var compatibility = CliqueTrue;
-                if (nodeSet[i] != CliqueUnknown)
-                {
-                    for (var j = 0; j < nodesize; j++)
-                    {
-                        if (currentClique[j] != CliqueUnknown)
-                        {
-                            if (localCompat[currentClique[j]][i] == 0)
-                            {
-                                compatibility = CliqueFalse;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    if (compatibility == CliqueTrue)
-                    {
-                        setY[index] = i;
-                        index++;
-                    }
-                }
-            }
-            return index;
-        }
-        private void printSetY(int[] setY)
-        {
-            var index = 0;
-            print(" setY = {");
-            while (setY[index] != CliqueUnknown)
-            {
-                print(" %d ", setY[index]);
-                index++;
-            }
-            print("}\n");
-        }
-        private void formSetY1(int nodesize, int[] setY, int[] setY1, int[][] setsIy)
-        {
-            var cards = new int[nodesize];
-
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < setY.Length; i++)
             {
                 setY1[i] = CliqueUnknown;
                 cards[i] = 0;
@@ -301,20 +294,20 @@ namespace Synthesize.CliquePartition
 
             /* Get the cardinalities of  intersection(I_y, setY) 
                for each y in I_y */
-            for (var i = 0; i < nodesize; i++) /* for each y in I_y */
+            for (var i = 0; i < setY.Length; i++) /* for each y in I_y */
             {
                 if (setY[i] != CliqueUnknown)
                 {
                     var currY = setY[i];
-                    for (var j = 0; j < nodesize; j++) /* for each node in I_y of curr_y*/
+                    for (var j = 0; j < setY.Length; j++) /* for each node in I_y of curr_y*/
                     {
                         if (setsIy[currY][j] != CliqueUnknown)
                         {
-                            for (var k = 0; k < nodesize; k++) /* for each node in set_Y */
+                            foreach (var t in setY)
                             {
-                                if (setY[k] != CliqueUnknown)
+                                if (t != CliqueUnknown)
                                 {
-                                    if (setsIy[i][j] == setY[k])
+                                    if (setsIy[i][j] == t)
                                     {
                                         cards[i]++;
                                     }
@@ -334,7 +327,7 @@ namespace Synthesize.CliquePartition
             }
 
             var minVal = cards[0];
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < setY.Length; i++)
             {
                 if (setY[i] != CliqueUnknown)
                 {
@@ -346,11 +339,11 @@ namespace Synthesize.CliquePartition
             }
 
 #if DEBUG
-            print(" min_val = %d ", minVal);
+            print(enableConsolePrinting, " min_val = %d ", minVal);
 #endif
 
             var currIndex = 0;
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < setY.Length; i++)
             {
                 if (cards[i] == minVal)
                 {
@@ -360,22 +353,22 @@ namespace Synthesize.CliquePartition
             }
 
 #if DEBUG
-            print(" Set Y1 = { ");
-            for (var i = 0; i < nodesize; i++)
+            print(enableConsolePrinting, " Set Y1 = { ");
+            for (var i = 0; i < setY.Length; i++)
             {
                 if (setY1[i] != CliqueUnknown)
                 {
-                    print(" %d ", setY1[i]);
+                    print(enableConsolePrinting, " %d ", setY1[i]);
                 }
             }
-            print(" }\n");
+            print(enableConsolePrinting, " }\n");
 #endif
         }
-        private void formSetY2(int nodesize, int[] setY2, int[] setY1, int[] sizesOfSetsIy)
+        private static void formSetY2(bool enableConsolePrinting, int[] setY2, int[] setY1, int[] sizesOfSetsIy)
         {
             var maxVal = CliqueUnknown;
 
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < setY2.Length; i++)
             {
                 if (setY1[i] != CliqueUnknown)
                 {
@@ -391,7 +384,7 @@ namespace Synthesize.CliquePartition
             }
 
             var currIndex = 0;
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < setY2.Length; i++)
             {
                 if (setY1[i] != CliqueUnknown)
                 {
@@ -408,232 +401,243 @@ namespace Synthesize.CliquePartition
             }
 
 #if DEBUG
-            print(" curr_index = %d   max_val = %d ", currIndex, maxVal);
-            print(" Set Y2 = { ");
-            for (var i = 0; i < nodesize; i++)
+            print(enableConsolePrinting, " curr_index = %d   max_val = %d ", currIndex, maxVal);
+            print(enableConsolePrinting, " Set Y2 = { ");
+            foreach (var t in setY2)
             {
-                if (setY2[i] != CliqueUnknown)
+                if (t != CliqueUnknown)
                 {
-                    print(" %d ", setY2[i]);
+                    print(enableConsolePrinting, " %d ", t);
                 }
                 else
                 {
                     break;
                 }
             }
-            print(" }\n");
+            print(enableConsolePrinting, " }\n");
 #endif
         }
-        private int pickANodeToMerge(int[] setY, int[][] localCompat, int[] nodeSet, int nodesize)
+        private static void initCliqueSet(Clique[] cliqueSet, bool enableConsolePrinting)
         {
-            var newNode = CliqueUnknown;
-            /* dynamically allocate memory for sets_I_y array */
-
-            var setsIy = new int[nodesize][];
-
-            for (var i = 0; i < nodesize; i++)
+            print(enableConsolePrinting, "\n Initializing the clique set..");
+            for (var i = 0; i < Maxcliques; i++)
             {
-                setsIy[i] = new int[nodesize];
-            }
-
-            var currIndexes = new int[nodesize];
-            var sizesOfSetsIy = new int[nodesize];
-
-            for (var i = 0; i < nodesize; i++)
-            {
-                currIndexes[i] = 0;
-                sizesOfSetsIy[i] = 0;
-                for (var j = 0; j < nodesize; j++)
+                cliqueSet[i].Size = Unknown;
+                for (var j = 0; j < Maxcliques; j++)
                 {
-                    setsIy[i][j] = CliqueUnknown;
+                    cliqueSet[i].Members[j] = Unknown;
+                }
+            }
+            print(enableConsolePrinting, "..Done.\n");
+        }
+        private static void inputSanityCheck(bool enableConsolePrinting, int[][] compat)
+        {
+            /* Verifies whether the compat array passed is valid array
+             *  (1) Is each array entry =0 or 1?
+             *  (2) Is the matrix symmetric
+             * Note that diagonal entries can be either 0 or 1.
+             */
+
+            print(enableConsolePrinting, " Checking the sanity of the input..");
+
+            for (var i = 0; i < compat.Length; i++)
+            {
+                for (var j = 0; j < compat.Length; j++)
+                {
+                    if ((compat[i][j] != 1) && (compat[i][j] != 0))
+                    {
+                        print(enableConsolePrinting, " %d \n", compat[i][j]);
+                        print(enableConsolePrinting, "The value of an array element is other than 1 or 0. Aborting..\n");
+                        exit(0);
+                    }
+                    if (compat[i][j] != compat[j][i])
+                    {
+                        print(enableConsolePrinting, "The compatibility array is NOT symmetric at (%d,%d) and (%d,%d)! Aborting..\n ", i, j, j, i);
+                        exit(0);
+                    }
+                    print(enableConsolePrinting, ".");
                 }
             }
 
-            /* form I_y sets */
-
-            for (var i = 0; i < nodesize; i++)
+            print(enableConsolePrinting, "Done.\n");
+        }
+        private static void outputSanityCheck(Clique[] cliqueSet, bool enableConsolePrinting, int[][] localCompat, int[][] compat)
+        {
+            /* 
+             * Verifies the results of the heuristic.
+             * for each clique do
+             *   if the clique size is UNKNOWN
+             *      break
+             *   else
+             *     for every pair of members x and y in clique do
+             *       assert  compat[x][y] = 1 and compat[y][x] = 1
+             *     end for
+             *   end if
+             * end for
+             */
+            print(enableConsolePrinting, "\n Verifying the results of the clique partitioning algorithm..");
+            for (var i = 0; i < Maxcliques; i++)
             {
-                if (setY[i] != CliqueUnknown) /* for each y in Y do */
+                if (cliqueSet[i].Size != Unknown)
                 {
-                    for (var j = 0; j < nodesize; j++)
+                    assert(cliqueSet[i].Size > 0);
+                    for (var j = 0; j < cliqueSet[i].Size; j++)
                     {
-                        if (nodeSet[j] != CliqueUnknown)
+                        for (var k = 0; k < cliqueSet[i].Size; k++)
                         {
-                            /* if this node is still in set N */
-                            if (localCompat[setY[i]][j] != 1)
+                            if (j != k)
                             {
-                                setsIy[setY[i]][currIndexes[setY[i]]] = j;
-                                currIndexes[setY[i]]++;
+                                var member1 = cliqueSet[i].Members[j];
+                                var member2 = cliqueSet[i].Members[k];
+
+                                assert(compat[member1][member2] == 1);
+                                assert(compat[member2][member1] == 1);
+                                assert(localCompat[member2][member1] == 1);
+                                assert(localCompat[member2][member1] == 1);
+                                print(enableConsolePrinting, ".");
                             }
                         }
                     }
                 }
-                else
-                {
-                    break; /* end of setY */
-                }
             }
-
-            for (var i = 0; i < nodesize; i++)
-            {
-                if (setY[i] != CliqueUnknown) /* for each y in Y do */
-                {
-                    var currNodeInSetY = setY[i];
-
-                    /* copy curr index into sizes */
-                    sizesOfSetsIy[currNodeInSetY] = currIndexes[currNodeInSetY];
-
-                    /* print all I_y sets */
-#if DEBUG
-                    print(" i= %d  nodeno= %d, curr_index = %d  ", i, currNodeInSetY, currIndexes[currNodeInSetY]);
-
-                    printSetY(setsIy[currNodeInSetY]);
-#endif
-                }
-            }
-
-            /* form set_Y1 */
-            var setY1 = new int[nodesize];
-            for (var i = 0; i < nodesize; i++)
-            {
-                setY1[i] = CliqueUnknown;
-            }
-            formSetY1(nodesize, setY, setY1, setsIy);
-
-            /* form set_Y2 */
-            var setY2 = new int[nodesize];
-            for (var i = 0; i < nodesize; i++)
-            {
-                setY2[i] = CliqueUnknown;
-            }
-            formSetY2(nodesize, setY2, setY1, sizesOfSetsIy);
-
-            if (setY2[0] != CliqueUnknown)
-            {
-                newNode = setY2[0];
-            }
-
-            return newNode;
+            print(enableConsolePrinting, "..Done.\n");
         }
-        private void initCliqueSet()
+        private static void makeALocalCopy(int[][] localCompat, int[][] compat)
         {
-            print("\n Initializing the clique set..");
-            for (var i = 0; i < Maxcliques; i++)
+            for (var i = 0; i < compat.Length; i++)
             {
-                CliqueSet[i].Size = Unknown;
-                for (var j = 0; j < Maxcliques; j++)
+                for (var j = 0; j < compat.Length; j++)
                 {
-                    CliqueSet[i].Members[j] = Unknown;
+                    localCompat[i][j] = compat[i][j];
                 }
             }
-            print("..Done.\n");
         }
-        private void printCliqueSet()
+        private static void printCliqueSet(Clique[] cliqueSet, bool enableConsolePrinting)
         {
-            print("\n Clique Set: \n");
+            print(enableConsolePrinting, "\n Clique Set: \n");
 
             for (var i = 0; i < Maxcliques; i++)
             {
-                if (CliqueSet[i].Size == Unknown)
+                if (cliqueSet[i].Size == Unknown)
                 {
                     break;
                 }
 
-                print("\tClique #%d (size = %d) = { ", i, CliqueSet[i].Size);
+                print(enableConsolePrinting, "\tClique #%d (size = %d) = { ", i, cliqueSet[i].Size);
 
                 for (var j = 0; j < Maxcliques; j++)
                 {
-                    if (CliqueSet[i].Members[j] != Unknown)
+                    if (cliqueSet[i].Members[j] != Unknown)
                     {
-                        print(" %d ", CliqueSet[i].Members[j]);
+                        print(enableConsolePrinting, " %d ", cliqueSet[i].Members[j]);
                     }
                     else
                     {
                         break;
                     }
                 }
-                print(" }\n");
+                print(enableConsolePrinting, " }\n");
             }
-            print("\n");
+            print(enableConsolePrinting, "\n");
         }
-        public void cliquePartition(int[][] compat, int nodesize)
+        private static void printSetY(bool enableConsolePrinting, int[] setY)
         {
-            print("\n");
-            print("**************************************\n");
-            print(" *       Clique Partitioner         *\n");
-            print("**************************************\n");
-            print("\nEntering Clique Partitioner.. \n");
+            var index = 0;
+            print(enableConsolePrinting, " setY = {");
+            while (setY[index] != CliqueUnknown)
+            {
+                print(enableConsolePrinting, " %d ", setY[index]);
+                index++;
+            }
+            print(enableConsolePrinting, "}\n");
+        }
+        
+        /// <summary>
+        /// Performs a clique partitioning algorithm on a matrix.
+        /// </summary>
+        public static Clique[] CliquePartition(int[][] compat, bool enableConsolePrinting = true)
+        {
+            print(enableConsolePrinting, "\n");
+            print(enableConsolePrinting, "**************************************\n");
+            print(enableConsolePrinting, " *       Clique Partitioner         *\n");
+            print(enableConsolePrinting, "**************************************\n");
+            print(enableConsolePrinting, "\nEntering Clique Partitioner.. \n");
 
-            inputSanityCheck(compat, nodesize);
+            var cliqueSet = Enumerable
+                .Range(0, Maxcliques)
+                .Select(index => new Clique())
+                .ToArray();
+
+            inputSanityCheck(enableConsolePrinting, compat);
 
             /* dynamically allocate memory for local copy */
 
-            var localCompat = new int[nodesize][];
+            var localCompat = new int[compat.Length][];
 
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < compat.Length; i++)
             {
-                localCompat[i] = new int[nodesize];
+                localCompat[i] = new int[compat.Length];
             }
 
-            makeALocalCopy(localCompat, compat, nodesize);
+            makeALocalCopy(localCompat, compat);
 
-            print(" You entered the compatibility array: \n");
-            for (var i = 0; i < nodesize; i++)
+            print(enableConsolePrinting, " You entered the compatibility array: \n");
+            for (var i = 0; i < compat.Length; i++)
             {
-                print("\t");
-                for (var j = 0; j < nodesize; j++)
+                print(enableConsolePrinting, "\t");
+                for (var j = 0; j < compat.Length; j++)
                 {
-                    print("%d ", localCompat[i][j]);
+                    print(enableConsolePrinting, "%d ", localCompat[i][j]);
                 }
-                print("\n");
+                print(enableConsolePrinting, "\n");
             }
 
-            initCliqueSet();
+            initCliqueSet(cliqueSet, enableConsolePrinting);
 
             /* allocate memory for current clique & initialize to unknown values*/
             /* - current_clique has the indices of nodes that are compatible with each other*/
             /* - A node i is in node_set if node_set[i] = i */
 
-            var currentClique = new int[nodesize];
-            var nodeSet = new int[nodesize];
-            var setY = new int[nodesize];
+            var currentClique = new int[compat.Length];
+            var nodeSet = new int[compat.Length];
+            var setY = new int[compat.Length];
 
-            for (var i = 0; i < nodesize; i++)
+            for (var i = 0; i < compat.Length; i++)
             {
                 currentClique[i] = CliqueUnknown;
                 nodeSet[i] = i;
                 setY[i] = CliqueUnknown;
             }
 
-            var sizeN = nodesize;
+            var sizeN = compat.Length;
             var currIndex = 0; /* reset the index to start for current clique */
 
             while (sizeN > 0) /* i.e still cliques to be formed */
             {
 #if DEBUG
-                print("=====================================================\n");
-                print(" size_N = %d  node_set = { ", sizeN);
-                for (var i = 0; i < nodesize; i++)
+                print(enableConsolePrinting, "=====================================================\n");
+                print(enableConsolePrinting, " size_N = %d  node_set = { ", sizeN);
+                for (var i = 0; i < compat.Length; i++)
                 {
-                    print(" %d ", nodeSet[i]);
+                    print(enableConsolePrinting, " %d ", nodeSet[i]);
                 }
-                print(" }\n");
+                print(enableConsolePrinting, " }\n");
 #endif
 
                 if (currentClique[0] == CliqueUnknown) /* new clique formation */
                 {
-                    var nodeX = selectNewNode(localCompat, nodesize, nodeSet);
+                    var nodeX = selectNewNode(enableConsolePrinting, localCompat, nodeSet);
 #if DEBUG
-                    print(" Node x = %d \n", nodeX); /* first node in the clique */
+                    print(enableConsolePrinting, " Node x = %d \n", nodeX); /* first node in the clique */
 #endif
                     currentClique[currIndex] = nodeX;
                     nodeSet[nodeX] = CliqueUnknown; /* remove node_x from N i.e node_set */
                     currIndex++;
                 }
 
-                var setYCardinality = formSetY(setY, currentClique, localCompat, nodesize, nodeSet);
+                var setYCardinality = formSetY(setY, currentClique, localCompat, nodeSet);
 #if DEBUG
-                printSetY(setY);
+                printSetY(enableConsolePrinting, setY);
 #endif
                 /* print (" Set Y cardinality = %d \n", setY_cardinality);*/
 
@@ -643,50 +647,52 @@ namespace Synthesize.CliquePartition
                 {
                     /* copy the current clique into central datastructure */
                     var cliqueIndex = 0;
-                    while (CliqueSet[cliqueIndex].Size != Unknown)
+                    while (cliqueSet[cliqueIndex].Size != Unknown)
                     {
                         cliqueIndex++;
                     }
 
-                    CliqueSet[cliqueIndex].Size = 0;
+                    cliqueSet[cliqueIndex].Size = 0;
 
-                    print(" A clique is found!! Clique = { ");
-                    for (var i = 0; i < nodesize; i++)
+                    print(enableConsolePrinting, " A clique is found!! Clique = { ");
+                    for (var i = 0; i < compat.Length; i++)
                     {
                         if (currentClique[i] != CliqueUnknown)
                         {
-                            CliqueSet[cliqueIndex].Members[i] = currentClique[i];
+                            cliqueSet[cliqueIndex].Members[i] = currentClique[i];
 
-                            print(" %d ", currentClique[i]);
+                            print(enableConsolePrinting, " %d ", currentClique[i]);
                             nodeSet[currentClique[i]] = CliqueUnknown; /* remove this node from the node list */
                             currentClique[i] = CliqueUnknown;
                             sizeN--;
-                            CliqueSet[cliqueIndex].Size++;
+                            cliqueSet[cliqueIndex].Size++;
                         }
                         else
                         {
                             break;
                         }
                     }
-                    print(" }\n");
+                    print(enableConsolePrinting, " }\n");
                     currIndex = 0; /* reset the curr_index for the next clique */
                 }
                 else
                 {
-                    var nodeY = pickANodeToMerge(setY, localCompat, nodeSet, nodesize);
+                    var nodeY = pickANodeToMerge(enableConsolePrinting, setY, localCompat, nodeSet);
                     currentClique[currIndex] = nodeY;
                     nodeSet[nodeY] = CliqueUnknown;
 #if DEBUG
-                    print(" y (new node) = %d \n", nodeY);
+                    print(enableConsolePrinting, " y (new node) = %d \n", nodeY);
 #endif
                     currIndex++;
                 }
             }
-            outputSanityCheck(localCompat, compat);
-            print("\n Final Clique Partitioning Results:\n");
-            printCliqueSet();
-            print("Exiting Clique Partitioner.. Bye.\n");
-            print("**************************************\n\n");
+            outputSanityCheck(cliqueSet, enableConsolePrinting, localCompat, compat);
+            print(enableConsolePrinting, "\n Final Clique Partitioning Results:\n");
+            printCliqueSet(cliqueSet, enableConsolePrinting);
+            print(enableConsolePrinting, "Exiting Clique Partitioner.. Bye.\n");
+            print(enableConsolePrinting, "**************************************\n\n");
+
+            return cliqueSet;
         }
     }
 }
