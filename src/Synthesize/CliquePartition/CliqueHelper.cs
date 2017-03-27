@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
+using NLog;
 
 namespace Synthesize.CliquePartition
 {
@@ -9,28 +10,8 @@ namespace Synthesize.CliquePartition
     /// </summary>
     public static class CliqueHelper
     {
-        // ReSharper disable once UnusedParameter.Local
-        private static void assert(bool test)
-        {
-            if (!test)
-            {
-                throw new InvalidProgramException("The assert failed.");
-            }
-        }
-        private static void print(bool enableConsolePrinting, string text, params int[] numbers)
-        {
-            if (enableConsolePrinting)
-            {
-                var index = 0;
-                text = Regex.Replace(text, "%d", match => index < numbers.Length ? numbers[index++].ToString() : "%d");
-                Console.Write(text);
-            }
-        }
-        private static void exit(int exitCode)
-        {
-            throw new InvalidProgramException("The program should exit with code: " + exitCode);
-        }
-        
+        public static readonly ILogger Log = LogManager.GetLogger(nameof(CliqueHelper));
+
         public class Clique
         {
             public int[] Members = new int[Maxcliques];/* members of the clique */
@@ -97,7 +78,7 @@ namespace Synthesize.CliquePartition
             }
             return nodeDegree;
         }
-        private static int pickANodeToMerge(bool enableConsolePrinting, int[] setY, int[][] localCompat, int[] nodeSet)
+        private static int pickANodeToMerge(int[] setY, int[][] localCompat, int[] nodeSet)
         {
             var newNode = CliqueUnknown;
             /* dynamically allocate memory for sets_I_y array */
@@ -157,11 +138,9 @@ namespace Synthesize.CliquePartition
                     sizesOfSetsIy[currNodeInSetY] = currIndexes[currNodeInSetY];
 
                     /* print all I_y sets */
-#if DEBUG
-                    print(enableConsolePrinting, " i= %d  nodeno= %d, curr_index = %d  ", i, currNodeInSetY, currIndexes[currNodeInSetY]);
+                    Log.Debug("i = {i}  nodeno = {currNodeInSetY}, curr_index = {currIndexes[currNodeInSetY]}");
 
-                    printSetY(enableConsolePrinting, setsIy[currNodeInSetY]);
-#endif
+                    printSetY(setsIy[currNodeInSetY]);
                 }
             }
 
@@ -171,7 +150,7 @@ namespace Synthesize.CliquePartition
             {
                 setY1[i] = CliqueUnknown;
             }
-            formSetY1(enableConsolePrinting, setY, setY1, setsIy);
+            formSetY1(setY, setY1, setsIy);
 
             /* form set_Y2 */
             var setY2 = new int[localCompat.Length];
@@ -179,7 +158,7 @@ namespace Synthesize.CliquePartition
             {
                 setY2[i] = CliqueUnknown;
             }
-            formSetY2(enableConsolePrinting, setY2, setY1, sizesOfSetsIy);
+            formSetY2(setY2, setY1, sizesOfSetsIy);
 
             if (setY2[0] != CliqueUnknown)
             {
@@ -188,7 +167,7 @@ namespace Synthesize.CliquePartition
 
             return newNode;
         }
-        private static int selectNewNode(bool enableConsolePrinting, int[][] localCompat, int[] nodeSet)
+        private static int selectNewNode(int[][] localCompat, int[] nodeSet)
         {
             /*    if a node with priority, then pick that node 
              *      else a node with highest degree
@@ -217,9 +196,7 @@ namespace Synthesize.CliquePartition
                 {
                     var currNodeDegree = getDegreeOfANode(i, localCompat, nodeSet);
 
-#if DEBUG
-                    print(enableConsolePrinting, " node=%d curr_node_degree = %d \n", i, currNodeDegree);
-#endif
+                    Log.Debug($"node = {i} curr_node_degree = {currNodeDegree}");
                     if (currNodeDegree > currMaxDegree)
                     {
                         currMaxDegree = currNodeDegree;
@@ -264,9 +241,7 @@ namespace Synthesize.CliquePartition
 
                         /* get cumulative neighbor weight for this node */
                         currNeighborsWt += getDegreeOfANode(currNode, localCompat, nodeSet);
-#if DEBUG
-                        print(enableConsolePrinting, "curr_node = %d curr_neighbors_wt=%d\n", currNode, currNeighborsWt);
-#endif
+                        Log.Debug($"curr_node = {currNode} curr_neighbors_wt = {currNeighborsWt}");
                         /* Is the local_compat, node_set consistent? */
                         if (currNeighborsWt >= maxCurrNeighborsWt)
                         {
@@ -276,13 +251,11 @@ namespace Synthesize.CliquePartition
                     }
                 }
             }
-#if DEBUG
-            print(enableConsolePrinting, " curr_max_degree = %d max_node= %d\n", currMaxDegree, maxNode);
-#endif
+            Log.Debug($"curr_max_degree = {currMaxDegree} max_node = {maxNode}");
 
             return maxNode;
         }
-        private static void formSetY1(bool enableConsolePrinting, int[] setY, int[] setY1, int[][] setsIy)
+        private static void formSetY1(int[] setY, int[] setY1, int[][] setsIy)
         {
             var cards = new int[setY.Length];
 
@@ -337,11 +310,7 @@ namespace Synthesize.CliquePartition
                     }
                 }
             }
-
-#if DEBUG
-            print(enableConsolePrinting, " min_val = %d ", minVal);
-#endif
-
+            
             var currIndex = 0;
             for (var i = 0; i < setY.Length; i++)
             {
@@ -351,20 +320,10 @@ namespace Synthesize.CliquePartition
                     currIndex++;
                 }
             }
-
-#if DEBUG
-            print(enableConsolePrinting, " Set Y1 = { ");
-            for (var i = 0; i < setY.Length; i++)
-            {
-                if (setY1[i] != CliqueUnknown)
-                {
-                    print(enableConsolePrinting, " %d ", setY1[i]);
-                }
-            }
-            print(enableConsolePrinting, " }\n");
-#endif
+            
+            Log.Debug($"min_val = {minVal} Set Y1 = {{ {string.Join("  ", setY.Where(value => value != CliqueUnknown))} }}");
         }
-        private static void formSetY2(bool enableConsolePrinting, int[] setY2, int[] setY1, int[] sizesOfSetsIy)
+        private static void formSetY2(int[] setY2, int[] setY1, int[] sizesOfSetsIy)
         {
             var maxVal = CliqueUnknown;
 
@@ -400,26 +359,11 @@ namespace Synthesize.CliquePartition
                 }
             }
 
-#if DEBUG
-            print(enableConsolePrinting, " curr_index = %d   max_val = %d ", currIndex, maxVal);
-            print(enableConsolePrinting, " Set Y2 = { ");
-            foreach (var t in setY2)
-            {
-                if (t != CliqueUnknown)
-                {
-                    print(enableConsolePrinting, " %d ", t);
-                }
-                else
-                {
-                    break;
-                }
-            }
-            print(enableConsolePrinting, " }\n");
-#endif
+            Log.Debug($"curr_index = {currIndex} max_val = {maxVal} Set Y2 = {{ {string.Join("  ", setY2.TakeWhile(t => t != CliqueUnknown))} }}");
         }
-        private static void initCliqueSet(Clique[] cliqueSet, bool enableConsolePrinting)
+        private static void initCliqueSet(Clique[] cliqueSet)
         {
-            print(enableConsolePrinting, "\n Initializing the clique set..");
+            Log.Info("Initializing the clique set...");
             for (var i = 0; i < Maxcliques; i++)
             {
                 cliqueSet[i].Size = Unknown;
@@ -428,9 +372,9 @@ namespace Synthesize.CliquePartition
                     cliqueSet[i].Members[j] = Unknown;
                 }
             }
-            print(enableConsolePrinting, "..Done.\n");
+            Log.Info("Done");
         }
-        private static void inputSanityCheck(bool enableConsolePrinting, int[][] compat)
+        private static void inputSanityCheck(int[][] compat)
         {
             /* Verifies whether the compat array passed is valid array
              *  (1) Is each array entry =0 or 1?
@@ -438,7 +382,7 @@ namespace Synthesize.CliquePartition
              * Note that diagonal entries can be either 0 or 1.
              */
 
-            print(enableConsolePrinting, " Checking the sanity of the input..");
+            Log.Info("Checking the sanity of the input...");
 
             for (var i = 0; i < compat.Length; i++)
             {
@@ -446,22 +390,20 @@ namespace Synthesize.CliquePartition
                 {
                     if ((compat[i][j] != 1) && (compat[i][j] != 0))
                     {
-                        print(enableConsolePrinting, " %d \n", compat[i][j]);
-                        print(enableConsolePrinting, "The value of an array element is other than 1 or 0. Aborting..\n");
-                        exit(0);
+                        Log.Fatal(compat[i][j]);
+                        throw new InvalidProgramException("The value of an array element is other than 1 or 0. Aborting..");
                     }
                     if (compat[i][j] != compat[j][i])
                     {
-                        print(enableConsolePrinting, "The compatibility array is NOT symmetric at (%d,%d) and (%d,%d)! Aborting..\n ", i, j, j, i);
-                        exit(0);
+                        throw new InvalidProgramException($"The compatibility array is NOT symmetric at ({i},{j}) and ({j},{i})! Aborting...");
                     }
-                    print(enableConsolePrinting, ".");
+                    Log.Info("Processing...");
                 }
             }
 
-            print(enableConsolePrinting, "Done.\n");
+            Log.Info("Done");
         }
-        private static void outputSanityCheck(Clique[] cliqueSet, bool enableConsolePrinting, int[][] localCompat, int[][] compat)
+        private static void outputSanityCheck(Clique[] cliqueSet, int[][] localCompat, int[][] compat)
         {
             /* 
              * Verifies the results of the heuristic.
@@ -475,12 +417,15 @@ namespace Synthesize.CliquePartition
              *   end if
              * end for
              */
-            print(enableConsolePrinting, "\n Verifying the results of the clique partitioning algorithm..");
+            Log.Info("Verifying the results of the clique partitioning algorithm...");
             for (var i = 0; i < Maxcliques; i++)
             {
                 if (cliqueSet[i].Size != Unknown)
                 {
-                    assert(cliqueSet[i].Size > 0);
+                    if (cliqueSet[i].Size <= 0)
+                    {
+                        throw new InvalidProgramException("cliqueSet[i].Size <= 0 failed.");
+                    }
                     for (var j = 0; j < cliqueSet[i].Size; j++)
                     {
                         for (var k = 0; k < cliqueSet[i].Size; k++)
@@ -490,17 +435,29 @@ namespace Synthesize.CliquePartition
                                 var member1 = cliqueSet[i].Members[j];
                                 var member2 = cliqueSet[i].Members[k];
 
-                                assert(compat[member1][member2] == 1);
-                                assert(compat[member2][member1] == 1);
-                                assert(localCompat[member2][member1] == 1);
-                                assert(localCompat[member2][member1] == 1);
-                                print(enableConsolePrinting, ".");
+                                if (compat[member1][member2] != 1)
+                                {
+                                    throw new InvalidProgramException($"compat[{member1}][{member2}] != 1");
+                                }
+                                if (compat[member2][member1] != 1)
+                                {
+                                    throw new InvalidProgramException($"compat[{member2}][{member1}] != 1");
+                                }
+                                if (localCompat[member2][member1] != 1)
+                                {
+                                    throw new InvalidProgramException($"localCompat[{member2}][{member1}] != 1");
+                                }
+                                if (localCompat[member2][member1] != 1)
+                                {
+                                    throw new InvalidProgramException($"localCompat[{member2}][{member1}] != 1");
+                                }
+                                Log.Info("Processing...");
                             }
                         }
                     }
                 }
             }
-            print(enableConsolePrinting, "..Done.\n");
+            Log.Info("Done");
         }
         private static void makeALocalCopy(int[][] localCompat, int[][] compat)
         {
@@ -512,9 +469,9 @@ namespace Synthesize.CliquePartition
                 }
             }
         }
-        private static void printCliqueSet(Clique[] cliqueSet, bool enableConsolePrinting)
+        private static void printCliqueSet(Clique[] cliqueSet)
         {
-            print(enableConsolePrinting, "\n Clique Set: \n");
+            Log.Info("Clique Set:");
 
             for (var i = 0; i < Maxcliques; i++)
             {
@@ -523,52 +480,27 @@ namespace Synthesize.CliquePartition
                     break;
                 }
 
-                print(enableConsolePrinting, "\tClique #%d (size = %d) = { ", i, cliqueSet[i].Size);
-
-                for (var j = 0; j < Maxcliques; j++)
-                {
-                    if (cliqueSet[i].Members[j] != Unknown)
-                    {
-                        print(enableConsolePrinting, " %d ", cliqueSet[i].Members[j]);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                print(enableConsolePrinting, " }\n");
+                Log.Info($"Clique #{i} (size = {cliqueSet[i].Size}) = {{ {string.Join("  ", cliqueSet[i].Members.TakeWhile(value => value != Unknown))} }}");
             }
-            print(enableConsolePrinting, "\n");
         }
-        private static void printSetY(bool enableConsolePrinting, int[] setY)
+        private static void printSetY(int[] setY)
         {
-            var index = 0;
-            print(enableConsolePrinting, " setY = {");
-            while (setY[index] != CliqueUnknown)
-            {
-                print(enableConsolePrinting, " %d ", setY[index]);
-                index++;
-            }
-            print(enableConsolePrinting, "}\n");
+            Log.Debug($"setY = {{ {string.Join("  ", setY.TakeWhile(value => value != CliqueUnknown))} }}");
         }
         
         /// <summary>
         /// Performs a clique partitioning algorithm on a matrix.
         /// </summary>
-        public static Clique[] CliquePartition(int[][] compat, bool enableConsolePrinting = true)
+        public static Clique[] CliquePartition(int[][] compat)
         {
-            print(enableConsolePrinting, "\n");
-            print(enableConsolePrinting, "**************************************\n");
-            print(enableConsolePrinting, " *       Clique Partitioner         *\n");
-            print(enableConsolePrinting, "**************************************\n");
-            print(enableConsolePrinting, "\nEntering Clique Partitioner.. \n");
+            Log.Info("Entering Clique Partitioner..");
 
             var cliqueSet = Enumerable
                 .Range(0, Maxcliques)
                 .Select(index => new Clique())
                 .ToArray();
 
-            inputSanityCheck(enableConsolePrinting, compat);
+            inputSanityCheck(compat);
 
             /* dynamically allocate memory for local copy */
 
@@ -581,18 +513,13 @@ namespace Synthesize.CliquePartition
 
             makeALocalCopy(localCompat, compat);
 
-            print(enableConsolePrinting, " You entered the compatibility array: \n");
+            Log.Info("You entered the compatibility array:");
             for (var i = 0; i < compat.Length; i++)
             {
-                print(enableConsolePrinting, "\t");
-                for (var j = 0; j < compat.Length; j++)
-                {
-                    print(enableConsolePrinting, "%d ", localCompat[i][j]);
-                }
-                print(enableConsolePrinting, "\n");
+                Log.Info(string.Join(" ", localCompat[i]));
             }
 
-            initCliqueSet(cliqueSet, enableConsolePrinting);
+            initCliqueSet(cliqueSet);
 
             /* allocate memory for current clique & initialize to unknown values*/
             /* - current_clique has the indices of nodes that are compatible with each other*/
@@ -614,31 +541,20 @@ namespace Synthesize.CliquePartition
 
             while (sizeN > 0) /* i.e still cliques to be formed */
             {
-#if DEBUG
-                print(enableConsolePrinting, "=====================================================\n");
-                print(enableConsolePrinting, " size_N = %d  node_set = { ", sizeN);
-                for (var i = 0; i < compat.Length; i++)
-                {
-                    print(enableConsolePrinting, " %d ", nodeSet[i]);
-                }
-                print(enableConsolePrinting, " }\n");
-#endif
+                Log.Debug($"size_N = {sizeN}  node_set = {{ {string.Join("  ", nodeSet)} }}");
 
                 if (currentClique[0] == CliqueUnknown) /* new clique formation */
                 {
-                    var nodeX = selectNewNode(enableConsolePrinting, localCompat, nodeSet);
-#if DEBUG
-                    print(enableConsolePrinting, " Node x = %d \n", nodeX); /* first node in the clique */
-#endif
+                    var nodeX = selectNewNode(localCompat, nodeSet);
+                    Log.Debug($"Node x = {nodeX}");
                     currentClique[currIndex] = nodeX;
                     nodeSet[nodeX] = CliqueUnknown; /* remove node_x from N i.e node_set */
                     currIndex++;
                 }
 
                 var setYCardinality = formSetY(setY, currentClique, localCompat, nodeSet);
-#if DEBUG
-                printSetY(enableConsolePrinting, setY);
-#endif
+                printSetY(setY);
+
                 /* print (" Set Y cardinality = %d \n", setY_cardinality);*/
 
                 if (setYCardinality == 0)
@@ -654,14 +570,14 @@ namespace Synthesize.CliquePartition
 
                     cliqueSet[cliqueIndex].Size = 0;
 
-                    print(enableConsolePrinting, " A clique is found!! Clique = { ");
-                    for (var i = 0; i < compat.Length; i++)
+                    var clique = new List<int>();
+                    for (var i = 0; i < currentClique.Length; i++)
                     {
                         if (currentClique[i] != CliqueUnknown)
                         {
                             cliqueSet[cliqueIndex].Members[i] = currentClique[i];
 
-                            print(enableConsolePrinting, " %d ", currentClique[i]);
+                            clique.Add(currentClique[i]);
                             nodeSet[currentClique[i]] = CliqueUnknown; /* remove this node from the node list */
                             currentClique[i] = CliqueUnknown;
                             sizeN--;
@@ -672,25 +588,21 @@ namespace Synthesize.CliquePartition
                             break;
                         }
                     }
-                    print(enableConsolePrinting, " }\n");
+                    Log.Info($"A clique is found!! Clique = {{ {string.Join("  ", clique)} }}");
                     currIndex = 0; /* reset the curr_index for the next clique */
                 }
                 else
                 {
-                    var nodeY = pickANodeToMerge(enableConsolePrinting, setY, localCompat, nodeSet);
+                    var nodeY = pickANodeToMerge(setY, localCompat, nodeSet);
                     currentClique[currIndex] = nodeY;
                     nodeSet[nodeY] = CliqueUnknown;
-#if DEBUG
-                    print(enableConsolePrinting, " y (new node) = %d \n", nodeY);
-#endif
+                    Log.Debug($"y (new node) = {nodeY}");
                     currIndex++;
                 }
             }
-            outputSanityCheck(cliqueSet, enableConsolePrinting, localCompat, compat);
-            print(enableConsolePrinting, "\n Final Clique Partitioning Results:\n");
-            printCliqueSet(cliqueSet, enableConsolePrinting);
-            print(enableConsolePrinting, "Exiting Clique Partitioner.. Bye.\n");
-            print(enableConsolePrinting, "**************************************\n\n");
+            outputSanityCheck(cliqueSet, localCompat, compat);
+            Log.Debug("Final Clique Partitioning Results:");
+            printCliqueSet(cliqueSet);
 
             return cliqueSet;
         }

@@ -9,7 +9,7 @@ namespace Synthesize.FileParsing
     public class AifFile
     {
         private const string registerNamePattern = @"[a-z\d_]+";
-        private void addOperation(string line, int lineNumber)
+        private void addOperation(string line, int opIndex, int lineNumber)
         {
             const string sectionName = "operations";
 
@@ -57,6 +57,7 @@ namespace Synthesize.FileParsing
 
             var operation = outputWithParent.Parent = new Operation
             {
+                Id = $"op{opIndex:000}",
                 Name = splitLine[0],
                 Op = splitLine[1],
                 Bits = bits,
@@ -67,7 +68,7 @@ namespace Synthesize.FileParsing
 
             Operations.Add(operation.Name, operation);
         }
-        private void addRegisters<TRegister>(string regType, string line, int lineNumber)
+        private void addRegisters<TRegister>(string regType, string idPreFix, string line, int lineNumber)
             where TRegister : RegisterBase, new()
         {
             if (!Regex.IsMatch(line, $@"^{regType}(\s+{registerNamePattern}\s+\d+)+$", RegexOptions.IgnoreCase))
@@ -75,7 +76,7 @@ namespace Synthesize.FileParsing
                 throw new ParsingError(regType, line, lineNumber, 0, "Incorrect Format");
             }
 
-            int bits;
+            int bits, index = 0;
             foreach (var item in Regex.Matches(line.Substring(regType.Length), $@"{registerNamePattern}\s+\d+", RegexOptions.IgnoreCase)
                 .Cast<Match>()
                 .Select(match => new
@@ -93,6 +94,7 @@ namespace Synthesize.FileParsing
                     Match = match,
                     Register = new TRegister
                     {
+                        Id = $"{idPreFix}{index++:000}",
                         Name = match.MatchSplit[0],
                         Bits = int.TryParse(match.MatchSplit[1], out bits) ? bits : -1
                     }
@@ -113,6 +115,7 @@ namespace Synthesize.FileParsing
             var ended = false;
             var inputsProcessed = false;
             var lineCount = 0;
+            var opIndex = 0;
             var outputsProcessed = false;
             var registersProcessed = false;
             foreach (var line in lines
@@ -133,22 +136,23 @@ namespace Synthesize.FileParsing
 
                 if (!inputsProcessed)
                 {
-                    addRegisters<InputRegister>("inputs", line, lineCount);
+                    addRegisters<InputRegister>("inputs", "in", line, lineCount);
                     inputsProcessed = true;
                 }
                 else if (!outputsProcessed)
                 {
-                    addRegisters<OutputRegister>("outputs", line, lineCount);
+                    addRegisters<OutputRegister>("outputs", "out", line, lineCount);
                     outputsProcessed = true;
                 }
                 else if (!registersProcessed)
                 {
-                    addRegisters<Register>("regs", line, lineCount);
+                    addRegisters<Register>("regs", "reg", line, lineCount);
                     registersProcessed = true;
                 }
                 else
                 {
-                    addOperation(line, lineCount);
+                    addOperation(line, opIndex, lineCount);
+                    opIndex++;
                 }
             }
             if (!inputsProcessed)
@@ -173,13 +177,13 @@ namespace Synthesize.FileParsing
                 .Distinct()
                 .ToArray();
         }
-        private void traverseToInput(RegisterWithParentBase reg, List<string> pathFromOutput)
+        private void traverseToInput(RegisterWithParentBase reg, string outputName, List<string> pathFromOutput)
         {
             var parent = reg.Parent;
 
-            if (MinCycles < pathFromOutput.Count)
+            if (MinCycles[outputName] < pathFromOutput.Count)
             {
-                MinCycles = pathFromOutput.Count;
+                MinCycles[outputName] = pathFromOutput.Count;
             }
 
             var leftReg = parent.Left as RegisterWithParentBase;
@@ -189,7 +193,7 @@ namespace Synthesize.FileParsing
                 {
                     throw new CircularReferenceError(leftReg.Name);
                 }
-                traverseToInput(leftReg, new List<string>(pathFromOutput)
+                traverseToInput(leftReg, outputName, new List<string>(pathFromOutput)
                 {
                     leftReg.Name
                 });
@@ -202,7 +206,7 @@ namespace Synthesize.FileParsing
                 {
                     throw new CircularReferenceError(rightReg.Name);
                 }
-                traverseToInput(rightReg, new List<string>(pathFromOutput)
+                traverseToInput(rightReg, outputName, new List<string>(pathFromOutput)
                 {
                     rightReg.Name
                 });
@@ -220,7 +224,8 @@ namespace Synthesize.FileParsing
             //find circular references
             foreach (var reg in Registers.Values.OfType<OutputRegister>())
             {
-                traverseToInput(reg, new List<string>
+                MinCycles[reg.Name] = 1;
+                traverseToInput(reg, reg.Name, new List<string>
                 {
                     reg.Name
                 });
@@ -240,10 +245,10 @@ namespace Synthesize.FileParsing
             parse(lines);
             validate();
         }
+        public Dictionary<string, int> MinCycles { get; } = new Dictionary<string, int>();
         public Dictionary<string, Operation> Operations { get; } = new Dictionary<string, Operation>();
         public Dictionary<string, RegisterBase> Registers { get; } = new Dictionary<string, RegisterBase>();
 
-        public int MinCycles { get; private set; }
         public override string ToString()
         {
             return 
