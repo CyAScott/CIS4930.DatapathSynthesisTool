@@ -224,7 +224,10 @@ namespace Synthesize.Scheduler
 
             buildLinearModel();
 
-            var solution = Context.Solve();
+            var solution = Context.Solve(new MixedIntegerProgrammingDirective
+            {
+                Arithmetic = Arithmetic.Exact
+            });
             if (solution.Quality != SolverQuality.Optimal)
             {
                 throw new ArgumentException("Unable to find an optimal solution.");
