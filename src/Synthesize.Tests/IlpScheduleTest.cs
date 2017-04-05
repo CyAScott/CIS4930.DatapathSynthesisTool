@@ -7,6 +7,16 @@ namespace Synthesize.Tests
     public class IlpScheduleTest
     {
         [Test]
+        public void TestBookExample()
+        {
+            TestLogger.Setup();
+
+            var schedule = new IlpScheduler(AifFileTests.BookExample);
+            Assert.IsNotNull(schedule);
+
+            schedule.BuildSchedule();
+        }
+        [Test]
         public void TestEllip()
         {
             TestLogger.Setup();

@@ -8,6 +8,32 @@ namespace Synthesize.Tests
     [TestFixture]
     public partial class AifFileTests
     {
+        public static AifFile BookExample => new AifFile(
+                "inputs x 4 u 4 dx 4 y 4 a 4 c3 4",
+                "outputs u1 4 y1 4 x1 4 c 4",
+                "regs r01 4 r02 4 r03 4 r04 4 r06 4 r07 4 r08 4",
+                "op01 MULT 4 c3  x   r01",
+                "op02 MULT 4 u   dx  r02",
+                "op03 MULT 4 r01 r02 r03",
+                "op04 SUB  4 u   r03 r04",
+                "op05 SUB  4 r04 r07 u1",
+                "op06 MULT 4 c3  y   r06",
+                "op07 MULT 4 r06 dx  r07",
+                "op08 MULT 4 u   dx  r08",
+                "op09 ADD  4 y   r08 y1",
+                "op10 ADD  4 x   dx  x1",
+                "op11 LT   4 x1  a   c",
+                "end");
+        [Test]
+        public void TestBookExample()
+        {
+            var file = BookExample;
+            Assert.IsNotNull(file);
+            Console.WriteLine($"MinCycles: {file.MinCycles}");
+            Console.WriteLine($"Ops: {string.Join(", ", file.OperationTypes)}");
+            Console.WriteLine(file);
+        }
+
         public static AifFile Ellip => new AifFile(
                 "inputs inp 4 svin2 4 svin13 4 svin18 4 svin26 4 svin33 4 svin38 4 svin39 4 TWO 4",
                 "outputs svout2 4 svout13 4 svout18 4 svout26 4 svout33 4 svout38 4 svout39 4",
