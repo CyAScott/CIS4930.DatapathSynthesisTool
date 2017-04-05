@@ -25,7 +25,7 @@ namespace Synthesize.Scheduler
             {
                 Log.Info($"Cycle {cycle:00}: " + string.Join(", ", Cycles[cycle]
                     .GroupBy(op => op.Op)
-                    .Select(group => $"{group.Key}({string.Join(", ", group.Select(op => op.Name))})")));
+                    .Select(group => $"{group.Key} -> {{{string.Join(", ", group.Select(op => op.Name))}}}")));
             }
         }
     }

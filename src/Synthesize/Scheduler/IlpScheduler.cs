@@ -71,7 +71,7 @@ namespace Synthesize.Scheduler
             public int MinCycle { get; set; } = -1;
             public override string ToString()
             {
-                return $"From {MinCycle:000} to {MaxCycle:000} -> {Operation.Id} - {Operation}";
+                return $"{Operation.Name,-10} -> Mobility {MinCycle:000} to {MaxCycle:000}";
             }
         }
 
@@ -194,7 +194,7 @@ namespace Synthesize.Scheduler
         }
         private void buildOperationCycleRanges(int latency)
         {
-            Log.Info("Finding the slack for each operation.");
+            Log.Info("Finding the mobility for each operation.");
             var operationCycleRanges = new List<OperationCycleRange>();
             foreach (var op in AifFile.Operations.Values.OrderBy(op => op.Id))
             {
@@ -234,10 +234,12 @@ namespace Synthesize.Scheduler
             }
 
             var cycleCount = OperationCycleRanges.Max(item => item.MaxCycle) + 1;
+            Log.Info($"{"Cycle",-10} = " + string.Join(", ", Enumerable.Range(1, cycleCount)
+                .Select(cycle => $"{cycle, 2}")));
             foreach (var op in OperationCycleRanges.OrderBy(op => op.Operation.Id))
             {
-                Log.Info($"{op.Operation.Name} = " + string.Join(", ", Enumerable.Range(1, cycleCount)
-                    .Select(cycle => op.Variables.ContainsKey(cycle) ? op.Variables[cycle].ToDouble() : 0)));
+                Log.Info($"{op.Operation.Name,-10} = " + string.Join(", ", Enumerable.Range(1, cycleCount)
+                    .Select(cycle => $"{(op.Variables.ContainsKey(cycle) ? op.Variables[cycle].ToDouble() : 0), 2}")));
             }
 
             var report = solution.GetReport();
