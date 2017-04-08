@@ -9,5 +9,6 @@
         public string Id { get; set; }
         public string Name { get; set; }
         public int Bits { get; set; }
+        public abstract bool IsDependantOn(Operation op);
     }
 }
