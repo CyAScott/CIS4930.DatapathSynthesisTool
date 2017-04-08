@@ -363,7 +363,7 @@ namespace Synthesize.CliquePartition
         }
         private static void initCliqueSet(Clique[] cliqueSet)
         {
-            Log.Info("Initializing the clique set...");
+            Log.Debug("Initializing the clique set...");
             for (var i = 0; i < Maxcliques; i++)
             {
                 cliqueSet[i].Size = Unknown;
@@ -372,7 +372,7 @@ namespace Synthesize.CliquePartition
                     cliqueSet[i].Members[j] = Unknown;
                 }
             }
-            Log.Info("Done");
+            Log.Debug("Done");
         }
         private static void inputSanityCheck(int[][] compat)
         {
@@ -382,7 +382,7 @@ namespace Synthesize.CliquePartition
              * Note that diagonal entries can be either 0 or 1.
              */
 
-            Log.Info("Checking the sanity of the input...");
+            Log.Debug("Checking the sanity of the input...");
 
             for (var i = 0; i < compat.Length; i++)
             {
@@ -397,11 +397,11 @@ namespace Synthesize.CliquePartition
                     {
                         throw new InvalidProgramException($"The compatibility array is NOT symmetric at ({i},{j}) and ({j},{i})! Aborting...");
                     }
-                    Log.Info("Processing...");
+                    Log.Debug("Processing...");
                 }
             }
 
-            Log.Info("Done");
+            Log.Debug("Done");
         }
         private static void outputSanityCheck(Clique[] cliqueSet, int[][] localCompat, int[][] compat)
         {
@@ -417,7 +417,7 @@ namespace Synthesize.CliquePartition
              *   end if
              * end for
              */
-            Log.Info("Verifying the results of the clique partitioning algorithm...");
+            Log.Debug("Verifying the results of the clique partitioning algorithm...");
             for (var i = 0; i < Maxcliques; i++)
             {
                 if (cliqueSet[i].Size != Unknown)
@@ -451,13 +451,13 @@ namespace Synthesize.CliquePartition
                                 {
                                     throw new InvalidProgramException($"localCompat[{member2}][{member1}] != 1");
                                 }
-                                Log.Info("Processing...");
+                                Log.Debug("Processing...");
                             }
                         }
                     }
                 }
             }
-            Log.Info("Done");
+            Log.Debug("Done");
         }
         private static void makeALocalCopy(int[][] localCompat, int[][] compat)
         {
@@ -493,7 +493,7 @@ namespace Synthesize.CliquePartition
         /// </summary>
         public static Clique[] CliquePartition(int[][] compat)
         {
-            Log.Info("Entering Clique Partitioner..");
+            Log.Debug("Entering Clique Partitioner..");
 
             var cliqueSet = Enumerable
                 .Range(0, Maxcliques)
@@ -588,7 +588,7 @@ namespace Synthesize.CliquePartition
                             break;
                         }
                     }
-                    Log.Info($"A clique is found!! Clique = {{ {string.Join("  ", clique)} }}");
+                    Log.Debug($"A clique is found!! Clique = {{ {string.Join("  ", clique)} }}");
                     currIndex = 0; /* reset the curr_index for the next clique */
                 }
                 else
@@ -604,7 +604,7 @@ namespace Synthesize.CliquePartition
             Log.Debug("Final Clique Partitioning Results:");
             printCliqueSet(cliqueSet);
 
-            return cliqueSet;
+            return cliqueSet.TakeWhile(clique => clique.Size != Unknown).ToArray();
         }
     }
 }
