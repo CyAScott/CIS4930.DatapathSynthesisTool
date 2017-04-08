@@ -45,7 +45,12 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Allocation\AllocatorBase.cs" />
+    <Compile Include="Allocation\FunctionalUnit.cs" />
+    <Compile Include="Allocation\FunctionalUnitAllocator.cs" />
+    <Compile Include="Allocation\RegisterAllocator.cs" />
     <Compile Include="CliquePartition\CliqueHelper.cs" />
+    <Compile Include="DataPath\DataPathGenerator.cs" />
     <Compile Include="FileParsing\AifFile.cs" />
     <Compile Include="FileParsing\CircularReferenceError.cs" />
     <Compile Include="FileParsing\InputRegister.cs" />
@@ -56,6 +61,7 @@
     <Compile Include="FileParsing\Register.cs" />
     <Compile Include="FileParsing\RegisterBase.cs" />
     <Compile Include="FileParsing\RegisterWithParentBase.cs" />
+    <Compile Include="Multiplexor\MultiplexorGenerator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scheduler\IlpScheduler.cs" />

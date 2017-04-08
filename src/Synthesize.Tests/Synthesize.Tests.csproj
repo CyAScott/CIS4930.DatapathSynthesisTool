@@ -60,6 +60,7 @@
   <ItemGroup>
     <Compile Include="AifFileTests.cs" />
     <Compile Include="CliquePartitionTest.cs" />
+    <Compile Include="FuncUnitAllocationTests.cs" />
     <Compile Include="IlpScheduleTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestLogger.cs" />
