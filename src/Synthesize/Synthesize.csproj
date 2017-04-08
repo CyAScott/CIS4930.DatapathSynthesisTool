@@ -49,6 +49,7 @@
     <Compile Include="Allocation\FunctionalUnit.cs" />
     <Compile Include="Allocation\FunctionalUnitAllocator.cs" />
     <Compile Include="Allocation\RegisterAllocator.cs" />
+    <Compile Include="Allocation\RegisterUnit.cs" />
     <Compile Include="CliquePartition\CliqueHelper.cs" />
     <Compile Include="DataPath\DataPathGenerator.cs" />
     <Compile Include="FileParsing\AifFile.cs" />

@@ -257,7 +257,7 @@ namespace Synthesize.Scheduler
                         op.Variables[cycle].ToDouble() > 0)
                     .Select(op =>
                     {
-                        op.Operation.CycleIndex = cycle;
+                        op.Operation.CycleIndex = cycle - 1;
                         return op.Operation;
                     })
                     .ToArray())
