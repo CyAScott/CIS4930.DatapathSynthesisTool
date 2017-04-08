@@ -255,7 +255,11 @@ namespace Synthesize.Scheduler
                     .Where(op => 
                         op.Variables.ContainsKey(cycle) &&
                         op.Variables[cycle].ToDouble() > 0)
-                    .Select(op => op.Operation)
+                    .Select(op =>
+                    {
+                        op.Operation.CycleIndex = cycle;
+                        return op.Operation;
+                    })
                     .ToArray())
                 .Where(item => item.Length > 0)
                 .ToArray();

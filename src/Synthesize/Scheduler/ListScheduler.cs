@@ -25,6 +25,11 @@ namespace Synthesize.Scheduler
                     .SelectMany(group => group.Take(Resources[group.Key]))
                     .ToArray();
 
+                foreach (var op in cycle)
+                {
+                    op.CycleIndex = cycles.Count;
+                }
+
                 operations.RemoveAll(op => cycle.Contains(op));
 
                 readyRegisters.AddRange(cycle.Select(op => op.Output));

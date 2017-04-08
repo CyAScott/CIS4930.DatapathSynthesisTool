@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using System;
+using System.Linq;
+using NUnit.Framework;
+using Synthesize.FileParsing;
 using Synthesize.Scheduler;
 
 namespace Synthesize.Tests
@@ -6,65 +9,66 @@ namespace Synthesize.Tests
     [TestFixture]
     public class IlpScheduleTest
     {
-        [Test]
-        public void TestBookExample()
+        private void test(Func<AifFile> getFile)
         {
             TestLogger.Setup();
 
-            var schedule = new IlpScheduler(AifFileTests.BookExample);
+            var schedule = new IlpScheduler(getFile());
             Assert.IsNotNull(schedule);
 
             schedule.BuildSchedule();
+
+            //make sure all the operations are included in the schedule
+            var operations = schedule.Cycles.SelectMany(cycle => cycle).ToArray();
+            Assert.AreEqual(operations.Length, schedule.AifFile.Operations.Count);
+            Assert.IsTrue(operations.All(operation => schedule.AifFile.Operations.ContainsValue(operation)));
+
+            Assert.AreEqual(schedule.Cycles.Length, schedule.AifFile.MinCycles.Values.Max(), "The schedule does not have the min number of cycles.");
+
+            //check the order of operations
+            for (var index = 1; index < schedule.Cycles.Length; index++)
+            {
+                var cycle1 = schedule.Cycles[index - 1];
+                var cycle2 = schedule.Cycles[index];
+
+                Assert.IsTrue(cycle1.All(op1 => cycle2.All(op2 => !op1.IsDependantOn(op2))), "The order of operations are invalid.");
+            }
+        }
+
+        [Test]
+        public void TestBookExample()
+        {
+            test(() => AifFileTests.BookExample);
         }
         [Test]
         public void TestEllip()
         {
-            TestLogger.Setup();
-
-            var schedule = new IlpScheduler(AifFileTests.Ellip);
-            Assert.IsNotNull(schedule);
-
-            schedule.BuildSchedule();
+            test(() => AifFileTests.Ellip);
         }
         [Test]
         public void TestFir()
         {
-            TestLogger.Setup();
-
-            var schedule = new IlpScheduler(AifFileTests.Fir);
-            Assert.IsNotNull(schedule);
-
-            schedule.BuildSchedule();
+            test(() => AifFileTests.Fir);
         }
         [Test]
         public void TestIir()
         {
-            TestLogger.Setup();
-
-            var schedule = new IlpScheduler(AifFileTests.Iir);
-            Assert.IsNotNull(schedule);
-
-            schedule.BuildSchedule();
+            test(() => AifFileTests.Iir);
+        }
+        [Test]
+        public void TestInputExample()
+        {
+            test(() => AifFileTests.InputExample);
         }
         [Test]
         public void TestLattice()
         {
-            TestLogger.Setup();
-
-            var schedule = new IlpScheduler(AifFileTests.Lattice);
-            Assert.IsNotNull(schedule);
-
-            schedule.BuildSchedule();
+            test(() => AifFileTests.Lattice);
         }
         [Test]
         public void TestToyExample()
         {
-            TestLogger.Setup();
-
-            var schedule = new IlpScheduler(AifFileTests.ToyExample);
-            Assert.IsNotNull(schedule);
-
-            schedule.BuildSchedule();
+            test(() => AifFileTests.ToyExample);
         }
     }
 }
