@@ -20,8 +20,10 @@ namespace Synthesize.Allocation
                     .Where(op => op.Left == register || op.Right == register || op.Output == register)
                     .ToArray());
 
-                register.StartCycle = register is InputRegister ? 1 : operationsThatUseRegister.Value.Min(op => op.CycleIndex);
-                register.StopCycle = register is OutputRegister ? FunctionalUnits.Scheduler.Cycles.Length : operationsThatUseRegister.Value.Max(op => op.CycleIndex);
+                register.StartCycle = register is InputRegister ? 0 : operationsThatUseRegister.Value.Min(op => op.CycleIndex);
+                register.StopCycle = register is OutputRegister ? FunctionalUnits.Scheduler.Cycles.Length - 1 : operationsThatUseRegister.Value.Max(op => op.CycleIndex);
+
+                Log.Info($"{register.Name, -10} -> ({register.StartCycle:00}, {register.StopCycle:00}) {new string('_', register.StartCycle)}{new string('-', register.StopCycle - register.StartCycle + 1)}{new string('_', FunctionalUnits.Scheduler.Cycles.Length - register.StopCycle - 1)}");
             }
 
             return registers;

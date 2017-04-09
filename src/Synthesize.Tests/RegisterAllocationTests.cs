@@ -14,7 +14,9 @@ namespace Synthesize.Tests
         {
             TestLogger.Setup();
 
-            var schedule = new IlpScheduler(getFile());
+            var file = getFile();
+
+            var schedule = new IlpScheduler(file, file.MinCycles.Values.Max());
             schedule.BuildSchedule();
 
             var registerAllocator = new RegisterAllocator(new FunctionalUnitAllocator(schedule));

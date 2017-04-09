@@ -14,7 +14,7 @@ namespace Synthesize.Tests
                 Layout = "${message}"
             };
             config.AddTarget("console", target);
-            var rule = new LoggingRule("*", LogLevel.Debug, target);
+            var rule = new LoggingRule("*", LogLevel.Info, target);
             config.LoggingRules.Add(rule);
             LogManager.Configuration = config;
         }
