@@ -9,9 +9,9 @@ namespace Synthesize.Allocation
     {
         private RegisterBase[] getRegisterLifeCycles()
         {
-            var operations = FunctionalUnits.Scheduler.AifFile.Operations.Values.ToArray();
+            var operations = Functional.Scheduler.AifFile.Operations.Values.ToArray();
 
-            var registers = FunctionalUnits.Scheduler.AifFile.Registers.Values.ToArray();
+            var registers = Functional.Scheduler.AifFile.Registers.Values.ToArray();
 
             //find the life span for each register
             foreach (var register in registers)
@@ -21,9 +21,9 @@ namespace Synthesize.Allocation
                     .ToArray());
 
                 register.StartCycle = register is InputRegister ? 0 : operationsThatUseRegister.Value.Min(op => op.CycleIndex);
-                register.StopCycle = register is OutputRegister ? FunctionalUnits.Scheduler.Cycles.Length - 1 : operationsThatUseRegister.Value.Max(op => op.CycleIndex);
+                register.StopCycle = register is OutputRegister ? Functional.Scheduler.Cycles.Length - 1 : operationsThatUseRegister.Value.Max(op => op.CycleIndex);
 
-                Log.Info($"{register.Name, -10} -> ({register.StartCycle:00}, {register.StopCycle:00}) {new string('_', register.StartCycle)}{new string('-', register.StopCycle - register.StartCycle + 1)}{new string('_', FunctionalUnits.Scheduler.Cycles.Length - register.StopCycle - 1)}");
+                Log.Info($"{register.Name, -10} -> ({register.StartCycle:00}, {register.StopCycle:00}) {new string('_', register.StartCycle)}{new string('*', register.StopCycle - register.StartCycle + 1)}{new string('_', Functional.Scheduler.Cycles.Length - register.StopCycle - 1)}");
             }
 
             return registers;
@@ -48,9 +48,9 @@ namespace Synthesize.Allocation
             return compatibilityGraph;
         }
 
-        public RegisterAllocator(FunctionalUnitAllocator functionalUnits)
+        public RegisterAllocator(FunctionalUnitAllocator functional)
         {
-            FunctionalUnits = functionalUnits;
+            Functional = functional;
             
             var registers = getRegisterLifeCycles();
 
@@ -74,6 +74,6 @@ namespace Synthesize.Allocation
             }
         }
         public RegisterUnit[] Units { get; }
-        public FunctionalUnitAllocator FunctionalUnits { get; }
+        public FunctionalUnitAllocator Functional { get; }
     }
 }

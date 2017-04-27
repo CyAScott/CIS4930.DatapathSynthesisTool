@@ -4,9 +4,8 @@ using Synthesize.FileParsing;
 
 namespace Synthesize.Tests
 {
-    //valid test cases
     [TestFixture]
-    public partial class AifFileTests
+    public class AifFileTests
     {
         public static AifFile BookExample => new AifFile(
             "inputs x 4 u 4 dx 4 y 4 a 4 c3 4",

@@ -62,7 +62,9 @@
     <Compile Include="FileParsing\Register.cs" />
     <Compile Include="FileParsing\RegisterBase.cs" />
     <Compile Include="FileParsing\RegisterWithParentBase.cs" />
+    <Compile Include="Multiplexor\FunctionalUnitMultiplexor.cs" />
     <Compile Include="Multiplexor\MultiplexorGenerator.cs" />
+    <Compile Include="Multiplexor\RegisterUnitMultiplexor.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scheduler\IlpScheduler.cs" />

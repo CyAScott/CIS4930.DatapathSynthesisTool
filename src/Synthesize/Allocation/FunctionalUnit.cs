@@ -7,9 +7,10 @@ namespace Synthesize.Allocation
     {
         public Operation[] Operations { get; set; }
         public int Index { get; set; }
+        public string Name => $"{Op}{Index:00}";
         public override string ToString()
         {
-            return $"{Op}{Index:00} -> {string.Join(", ", Operations.Select(op => op.Name))}";
+            return $"{Name} -> {string.Join(", ", Operations.Select(op => op.Name))}";
         }
         public string Op { get; set; }
     }

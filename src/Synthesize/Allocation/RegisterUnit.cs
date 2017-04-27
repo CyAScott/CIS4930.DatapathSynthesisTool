@@ -7,9 +7,10 @@ namespace Synthesize.Allocation
     {
         public RegisterBase[] Registers { get; set; }
         public int Index { get; set; }
+        public string Name => $"REG{Index:00}";
         public override string ToString()
         {
-            return $"REG{Index:00} -> {string.Join(", ", Registers.Select(reg => reg.Name))}";
+            return $"{Name} -> {string.Join(", ", Registers.Select(reg => reg.Name))}";
         }
     }
 }
