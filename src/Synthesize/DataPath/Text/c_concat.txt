@@ -1,0 +1,12 @@
+component c_concat
+	generic
+	(
+		width1, width2 : integer := 4
+	);
+	port
+	(
+		input1 : in std_logic_vector((width1 - 1) downto 0);
+		input2 : in std_logic_vector((width2 - 1) downto 0);
+		output : out std_logic_vector((width1 + width2 - 1) downto 0)
+	);
+end component;

@@ -6,7 +6,7 @@ using NLog;
 using Synthesize.Allocation;
 using Synthesize.DataPath;
 using Synthesize.FileParsing;
-using Synthesize.Multiplexor;
+using Synthesize.Multiplexer;
 using Synthesize.Scheduler;
 
 namespace Synthesize
@@ -150,7 +150,9 @@ namespace Synthesize
                 if (line.IndexOf('y') != -1)
                 {
                     File.Delete(file);
-                    return File.AppendText(file);
+                    var stream = File.AppendText(file);
+                    stream.NewLine = "\n";
+                    return stream;
                 }
 
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -258,14 +260,12 @@ namespace Synthesize
 
                 //2. Functional Unit Allocation and Binding:
                 var functionalUnits = new FunctionalUnitAllocator(schedule);
-                functionalUnits.Allocate();
 
                 //3. Register Allocation and Binding
                 var registers = new RegisterAllocator(functionalUnits);
-                registers.Allocate();
 
-                //4. Multiplexor Generation:
-                var multiplexorGenerator = new MultiplexorGenerator(registers);
+                //4. Multiplexer Generation:
+                var multiplexorGenerator = new MultiplexerGenerator(registers);
 
                 //5. Datapath Generation in VHDL:
                 var dataPathGenerator = new DataPathGenerator(multiplexorGenerator);

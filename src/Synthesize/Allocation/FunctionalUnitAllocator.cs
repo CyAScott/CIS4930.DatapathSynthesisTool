@@ -58,7 +58,8 @@ namespace Synthesize.Allocation
                         Operations = clique.Members.Take(clique.Size)
                             .Select(index => unitGroup.Graph.OperationInfo.Operations[index])
                             .OrderBy(op => op.Id)
-                            .ToArray()
+                            .ToArray(),
+                        VhdlCodeFile = unitGroup.Graph.OperationInfo.Operations.First().VhdlCodeFile
                     }))
                 .ToArray();
 

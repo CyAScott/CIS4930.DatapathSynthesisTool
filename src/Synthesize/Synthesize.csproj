@@ -51,9 +51,16 @@
     <Compile Include="Allocation\RegisterAllocator.cs" />
     <Compile Include="Allocation\RegisterUnit.cs" />
     <Compile Include="CliquePartition\CliqueHelper.cs" />
+    <Compile Include="DataPath\Controller.cs" />
+    <Compile Include="DataPath\DataPath.cs" />
     <Compile Include="DataPath\DataPathGenerator.cs" />
+    <Compile Include="DataPath\Design.cs" />
+    <Compile Include="DataPath\TestBench.cs" />
+    <EmbeddedResource Include="DataPath\Text\CommentLine.txt" />
+    <Compile Include="Extensions\StreamExtensions.cs" />
     <Compile Include="FileParsing\AifFile.cs" />
     <Compile Include="FileParsing\CircularReferenceError.cs" />
+    <Compile Include="FileParsing\IAmAUnit.cs" />
     <Compile Include="FileParsing\InputRegister.cs" />
     <Compile Include="FileParsing\MissingParentError.cs" />
     <Compile Include="FileParsing\Operation.cs" />
@@ -62,9 +69,10 @@
     <Compile Include="FileParsing\Register.cs" />
     <Compile Include="FileParsing\RegisterBase.cs" />
     <Compile Include="FileParsing\RegisterWithParentBase.cs" />
-    <Compile Include="Multiplexor\FunctionalUnitMultiplexor.cs" />
-    <Compile Include="Multiplexor\MultiplexorGenerator.cs" />
-    <Compile Include="Multiplexor\RegisterUnitMultiplexor.cs" />
+    <Compile Include="Multiplexer\FunctionalUnitMultiplexer.cs" />
+    <Compile Include="Multiplexer\Multiplexer.cs" />
+    <Compile Include="Multiplexer\MultiplexerGenerator.cs" />
+    <Compile Include="Multiplexer\RegisterUnitMultiplexer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scheduler\IlpScheduler.cs" />
@@ -73,9 +81,38 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_adder.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_and.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_comparator.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_concat.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_divider.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_multiplexer.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_multiplier.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_nand.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_nor.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_not.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_or.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_subtractor.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_xnor.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_xor.vhd" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="DataPath\Text\c_adder.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_and.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_comparator.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_concat.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_divider.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_multiplexer.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_multiplier.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_nand.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_nor.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_not.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_or.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_subtractor.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_xnor.txt" />
+    <EmbeddedResource Include="DataPath\Text\c_xor.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

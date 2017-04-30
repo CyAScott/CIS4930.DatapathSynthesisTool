@@ -1,6 +1,6 @@
 ﻿namespace Synthesize.FileParsing
 {
-    public class Operation
+    public class Operation : IAmAUnit
     {
         public override string ToString()
         {
@@ -18,5 +18,6 @@
         public string Id { get; set; }
         public string Name { get; set; }
         public string Op { get; set; }
+        public string VhdlCodeFile { get; set; }
     }
 }

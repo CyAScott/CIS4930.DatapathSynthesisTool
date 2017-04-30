@@ -9,6 +9,47 @@ namespace Synthesize.FileParsing
     public class AifFile
     {
         private const string registerNamePattern = @"[a-z\d_]+";
+        private static readonly Dictionary<string, string> operationToCodeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            {"COMP", "c_comparator"},
+            {"AND", "c_and"},
+            {"ADD", "c_adder"},
+            {"DIV", "c_divider"},
+            {"NAND", "c_nand"},
+            {"NOR", "c_nor"},
+            {"NOT", "c_not"},
+            {"OR", "c_or"},
+            {"SUB", "c_subtractor"},
+            {"XNOR", "c_xnor"},
+            {"XOR", "c_xor"},
+            {"MULT", "c_multiplier"}
+        };
+        private static readonly Dictionary<string, string> operationToText = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            {"ADD", "+"},
+            {"DIV", "/"},
+            {"OR", "|"},
+            {"SUB", "-"},
+            {"MULT", "*"}
+        };
+        private string getExpressionFor(RegisterBase reg, string parentOpText = null)
+        {
+            var operation = Operations.Values.FirstOrDefault(op => op.Output == reg);
+            if (operation == null)
+            {
+                return reg.Name;
+            }
+
+            string opText;
+            if (!operationToText.TryGetValue(operation.Op, out opText))
+            {
+                return $"{operation.Op}({getExpressionFor(operation.Left, operation.Op)}, {getExpressionFor(operation.Right, operation.Op)})";
+            }
+
+            var expression = $"{getExpressionFor(operation.Left, opText)} {opText} {getExpressionFor(operation.Right, opText)}";
+
+            return string.IsNullOrEmpty(parentOpText) || string.Equals(parentOpText, opText, StringComparison.OrdinalIgnoreCase) ? expression : $"({expression})";
+        }
         private void addOperation(string line, int opIndex, int lineNumber)
         {
             const string sectionName = "operations";
@@ -19,6 +60,13 @@ namespace Synthesize.FileParsing
             }
 
             var splitLine = Regex.Replace(line, @"\s+", "\t").Split('\t');
+            
+            string codeFileForOp;
+            if (!operationToCodeMap.TryGetValue(splitLine[1], out codeFileForOp))
+            {
+                throw new ParsingError(sectionName, line, lineNumber, line.IndexOf(splitLine[1], StringComparison.Ordinal),
+                    "Unable to find the VHDL code for the provided operation.");
+            }
 
             int bits;
             if (!int.TryParse(splitLine[2], out bits) || bits < 1)
@@ -59,11 +107,12 @@ namespace Synthesize.FileParsing
             {
                 Id = $"op{opIndex:000}",
                 Name = splitLine[0],
-                Op = splitLine[1],
+                Op = splitLine[1].ToUpper(),
                 Bits = bits,
                 Left = left,
                 Right = right,
-                Output = outputWithParent
+                Output = outputWithParent,
+                VhdlCodeFile = codeFileForOp
             };
 
             Operations.Add(operation.Name, operation);
@@ -244,6 +293,9 @@ namespace Synthesize.FileParsing
         {
             parse(lines);
             validate();
+            AsExpressions = Registers.Values.OfType<OutputRegister>()
+                .Select(reg => $"{reg.Name} = f({string.Join(", ", Registers.Values.OfType<InputRegister>().Select(input => input.Name))}) = {getExpressionFor(reg)}")
+                .ToArray();
         }
         public Dictionary<string, int> MinCycles { get; } = new Dictionary<string, int>();
         public Dictionary<string, Operation> Operations { get; } = new Dictionary<string, Operation>();
@@ -258,6 +310,7 @@ namespace Synthesize.FileParsing
                 string.Join(Environment.NewLine, Operations.Values) + Environment.NewLine +
                 "end";
         }
+        public string[] AsExpressions { get; }
         public string[] OperationTypes { get; private set; }
     }
 }

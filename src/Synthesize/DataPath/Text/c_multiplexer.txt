@@ -1,0 +1,14 @@
+component c_multiplexer
+	generic
+	(
+		width : integer := 4;
+		no_of_inputs : integer := 2;
+		select_size : integer := 1
+	);
+	port
+	(
+		input : in std_logic_vector(((width * no_of_inputs) - 1) downto 0);
+		mux_select : in std_logic_vector ((select_size - 1) downto 0);
+		output : out std_logic_vector ((width - 1) downto 0)
+	);
+end component;

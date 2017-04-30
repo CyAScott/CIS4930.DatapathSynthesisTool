@@ -1,6 +1,6 @@
 ﻿namespace Synthesize.FileParsing
 {
-    public abstract class RegisterBase
+    public abstract class RegisterBase : IAmAUnit
     {
         public override string ToString()
         {

@@ -3,13 +3,13 @@ using System.Linq;
 using NUnit.Framework;
 using Synthesize.Allocation;
 using Synthesize.FileParsing;
-using Synthesize.Multiplexor;
+using Synthesize.Multiplexer;
 using Synthesize.Scheduler;
 
 namespace Synthesize.Tests
 {
     [TestFixture]
-    public class MultiplexorGeneratorTests
+    public class MultiplexerGeneratorTests
     {
         private void test(Func<AifFile> getFile)
         {
@@ -20,19 +20,19 @@ namespace Synthesize.Tests
             var schedule = new IlpScheduler(file, file.MinCycles.Values.Max());
             schedule.BuildSchedule();
 
-            var multiplexorGenerator = new MultiplexorGenerator(new RegisterAllocator(new FunctionalUnitAllocator(schedule)));
-            Assert.IsNotNull(multiplexorGenerator.FunctionalUnitMultiplexors);
-            Assert.IsNotNull(multiplexorGenerator.RegisterUnitMultiplexors);
+            var multiplexorGenerator = new MultiplexerGenerator(new RegisterAllocator(new FunctionalUnitAllocator(schedule)));
+            Assert.IsNotNull(multiplexorGenerator.FunctionalUnitMultiplexers);
+            Assert.IsNotNull(multiplexorGenerator.RegisterUnitMultiplexers);
 
-            Assert.IsTrue(multiplexorGenerator.FunctionalUnitMultiplexors.Length == 0 ||
-                multiplexorGenerator.FunctionalUnitMultiplexors.All(unit =>
-                    unit?.BitSize > 0 &&
-                    unit.Inputs?.Length > 1 &&
+            Assert.IsTrue(multiplexorGenerator.FunctionalUnitMultiplexers.Length == 0 ||
+                multiplexorGenerator.FunctionalUnitMultiplexers.All(unit =>
+                    unit?.SelectionBitSize > 0 &&
+                    unit.Op?.Length > 1 &&
                     unit.Unit != null));
 
-            Assert.IsTrue(multiplexorGenerator.RegisterUnitMultiplexors.Length == 0 ||
-                multiplexorGenerator.RegisterUnitMultiplexors.All(unit =>
-                    unit?.BitSize > 0 &&
+            Assert.IsTrue(multiplexorGenerator.RegisterUnitMultiplexers.Length == 0 ||
+                multiplexorGenerator.RegisterUnitMultiplexers.All(unit =>
+                    unit?.SelectionBitSize > 0 &&
                     unit.Registers?.Length > 1 &&
                     unit.Unit != null));
         }

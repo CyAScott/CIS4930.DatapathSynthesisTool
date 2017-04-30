@@ -14,14 +14,14 @@ namespace Synthesize.Tests
             "op01 MULT 4 c3  x   r01",
             "op02 MULT 4 u   dx  r02",
             "op03 MULT 4 r01 r02 r03",
-            "op04 ALU  4 u   r03 r04",
-            "op05 ALU  4 r04 r07 u1",
+            "op04 COMP 4 u   r03 r04",
+            "op05 COMP 4 r04 r07 u1",
             "op06 MULT 4 c3  y   r06",
             "op07 MULT 4 r06 dx  r07",
             "op08 MULT 4 u   dx  r08",
-            "op09 ALU  4 y   r08 y1",
-            "op10 ALU  4 x   dx  x1",
-            "op11 ALU   4 x1  a   c",
+            "op09 COMP 4 y   r08 y1",
+            "op10 COMP 4 x   dx  x1",
+            "op11 COMP 4 x1  a   c",
             "end");
         [Test]
         public void TestBookExample()

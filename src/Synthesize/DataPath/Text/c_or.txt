@@ -1,0 +1,12 @@
+component c_or
+	generic
+	(
+		width : integer := 1
+	);
+	port
+	(
+		input1 : std_logic_vector((width - 1) downto 0);
+		input2 : std_logic_vector((width - 1) downto 0);
+		output : out std_logic_vector((width - 1) downto 0)
+	);
+end component;
