@@ -95,6 +95,7 @@
     <EmbeddedResource Include="DataPath\Vhdl\c_subtractor.vhd" />
     <EmbeddedResource Include="DataPath\Vhdl\c_xnor.vhd" />
     <EmbeddedResource Include="DataPath\Vhdl\c_xor.vhd" />
+    <EmbeddedResource Include="DataPath\Vhdl\c_register.vhd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +113,9 @@
     <EmbeddedResource Include="DataPath\Text\c_subtractor.txt" />
     <EmbeddedResource Include="DataPath\Text\c_xnor.txt" />
     <EmbeddedResource Include="DataPath\Text\c_xor.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DataPath\Text\c_register.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

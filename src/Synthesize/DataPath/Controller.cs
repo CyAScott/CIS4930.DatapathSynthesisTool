@@ -11,6 +11,48 @@ namespace Synthesize.DataPath
 {
     public partial class DataPathGenerator
     {
+        private string writeControllerValueFor(StreamWriter stream, RegisterUnit unit, int cycle, int index)
+        {
+            stream.Write($"\t\t\t\tcontrol_bus({index}) <= '");
+
+            var inputReg = unit.Registers.OfType<InputRegister>().FirstOrDefault();
+
+            if (cycle == 0 && inputReg != null)
+            {
+                stream.WriteLine($"1'; -- {unit.Name}: store input {inputReg.Name}");
+                return "1";
+            }
+
+            var operation = AifFile.Operations.Values.FirstOrDefault(op => op.CycleIndex == cycle && unit.Registers.Any(reg => reg == op.Output));
+
+            stream.WriteLine(operation != null ?
+                $"1'; -- {unit.Name}: store output from operation {operation.Name}" :
+                $"0'; -- {unit.Name}: keep value");
+
+            return operation != null ? "1" : "0";
+        }
+        private string writeControllerValueFor(StreamWriter stream, Multiplexer.Multiplexer multiplexer, int cycle, int index)
+        {
+            stream.Write("\t\t\t\tcontrol_bus(");
+
+            var value = multiplexer.GetSelectValueAndNameFrom(cycle);
+
+            stream.Write(value.Item1.Length == 1 ?
+                $"{index}) <= '{value.Item1}'" :
+                $"{index} to {index + value.Item1.Length - 1}) <= \"{value.Item1}\"");
+            stream.Write($"; -- {value.Item1} {multiplexer.Name}");
+
+            if (string.IsNullOrEmpty(value.Item2))
+            {
+                stream.WriteLine();
+            }
+            else
+            {
+                stream.WriteLine($": select {value.Item2}");
+            }
+
+            return value.Item1;
+        }
         private void writeControllerComments(StreamWriter stream)
         {
             stream.WriteTextResource("CommentLine");
@@ -138,53 +180,11 @@ namespace Synthesize.DataPath
 
             stream.WriteLine($"\t\t\t\t-- Hex: {new string(hexDigits.ToArray())}");
         }
-        private string writeControllerValueFor(StreamWriter stream, RegisterUnit unit, int cycle, int index)
-        {
-            stream.Write($"\t\t\t\tcontrol_bus({index}) <= '");
-
-            var inputReg = unit.Registers.OfType<InputRegister>().FirstOrDefault();
-
-            if (cycle == 0 && inputReg != null)
-            {
-                stream.WriteLine($"1'; -- {unit.Name}: store input {inputReg.Name}");
-                return "1";
-            }
-
-            var operation = AifFile.Operations.Values.FirstOrDefault(op => op.CycleIndex == cycle && unit.Registers.Any(reg => reg == op.Output));
-
-            stream.WriteLine(operation != null ?
-                $"1'; -- {unit.Name}: store output from operation {operation.Name}" :
-                $"0'; -- {unit.Name}: keep value");
-
-            return operation != null ? "1" : "0";
-        }
-        private string writeControllerValueFor(StreamWriter stream, Multiplexer.Multiplexer multiplexer, int cycle, int index)
-        {
-            stream.Write("\t\t\t\tcontrol_bus(");
-
-            var value = multiplexer.GetSelectValueAndNameFrom(cycle);
-
-            stream.Write(value.Item1.Length == 1 ? 
-                $"{index}) <= '{value.Item1}'" : 
-                $"{index} to {index + value.Item1.Length - 1}) <= \"{value.Item1}\"");
-            stream.Write($"; -- {value.Item1} {multiplexer.Name}");
-
-            if (string.IsNullOrEmpty(value.Item2))
-            {
-                stream.WriteLine();
-            }
-            else
-            {
-                stream.WriteLine($": select {value.Item2}");
-            }
-
-            return value.Item1;
-        }
-
+        
         protected int ControllerBusBitWidth => Multiplexers.BusBitWidth + RegisterAllocator.Units.Length;
         protected int GetControlIndex(Multiplexer.Multiplexer multiplexer)
         {
-            return ControllerBusBitWidth + Multiplexers.Multiplexers
+            return RegisterAllocator.Units.Length + Multiplexers.Multiplexers
                 .TakeWhile(item => item != multiplexer)
                 .Sum(item => item.SelectionBitSize);
         }
@@ -192,16 +192,13 @@ namespace Synthesize.DataPath
         /// <summary>
         /// Generates the VHDL file that controls all the multiplexers.
         /// </summary>
-        public void SaveController(StreamWriter stream, bool signalFile = false)
+        public void SaveController(StreamWriter stream)
         {
             writeControllerComments(stream);
 
-            if (!signalFile)
-            {
-                stream.WriteLine();
-                stream.WriteLine("library IEEE;");
-                stream.WriteLine("use IEEE.std_logic_1164.all;");
-            }
+            stream.WriteLine();
+            stream.WriteLine("library IEEE;");
+            stream.WriteLine("use IEEE.std_logic_1164.all;");
 
             writeControllerEntity(stream);
 

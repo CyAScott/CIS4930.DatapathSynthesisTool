@@ -83,6 +83,9 @@ namespace Synthesize.Tests
             Console.WriteLine(file);
         }
 
+        /// <summary>
+        /// yout = f(c1, x0, c2, x1, c3, x2, c4, x3, c5, x4) = (c1 * x0) + (c2 * x1) + (c3 * x2) + (c4 * x3) + (c5 * x4)
+        /// </summary>
         public static AifFile Fir => new AifFile(
             "inputs c1 8 x0 8 c2 8 x1 8 c3 8 x2 8 c4 8 x3 8 c5 8 x4 8  ",
             "outputs yout 8",

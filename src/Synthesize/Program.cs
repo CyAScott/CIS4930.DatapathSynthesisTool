@@ -86,6 +86,36 @@ namespace Synthesize
                 return GetResources(file);
             }
         }
+        public static IEnumerable<Dictionary<string, string>> GetTestCases(DataPathGenerator dataPathGenerator)
+        {
+            while (true)
+            {
+                if (!agreeToCreateTestCase())
+                {
+                    yield break;
+                }
+
+                var returnValue = new Dictionary<string, string>();
+
+                var file = dataPathGenerator.AifFile;
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Enter the values for the inputs:");
+                foreach (var reg in file.Registers.Values.OfType<InputRegister>())
+                {
+                    returnValue[reg.Name] = GetInputForReg(reg);
+                }
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Enter the expected values for the outputs:");
+                foreach (var reg in file.Registers.Values.OfType<OutputRegister>())
+                {
+                    returnValue[reg.Name] = GetInputForReg(reg);
+                }
+
+                yield return returnValue;
+            }
+        }
         public static SchedulerBase GetSchedule(AifFile file)
         {
             try
@@ -178,6 +208,37 @@ namespace Synthesize
                 return GetSaveStream(file);
             }
         }
+        public static bool agreeToCreateTestCase()
+        {
+            while (true)
+            {
+                try
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("Do you want to add a test case (yes or no)?");
+
+                    Console.ForegroundColor = ConsoleColor.White;
+                    var answer = Console.ReadLine()?.Trim().ToLower() ?? "";
+
+                    if (answer == "no")
+                    {
+                        return false;
+                    }
+
+                    if (answer != "yes")
+                    {
+                        throw new ArgumentException();
+                    }
+
+                    return true;
+                }
+                catch
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Invalid answer.");
+                }
+            }
+        }
         public static int? GetLatency(AifFile file)
         {
             try
@@ -208,6 +269,58 @@ namespace Synthesize
             {
                 Log.Error(error);
                 return GetLatency(file);
+            }
+        }
+        public static string GetInputForReg(RegisterBase reg)
+        {
+            try
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Enter the base 10 value for {reg.Name}:");
+
+                Console.ForegroundColor = ConsoleColor.White;
+                var inputStr = Console.ReadLine()?.Trim();
+
+                long inputInt;
+                if (!long.TryParse(inputStr, out inputInt))
+                {
+                    throw new ArgumentException("Please enter an integer number.");
+                }
+
+                var bits = reg.Bits;
+                var max = Math.Pow(2, bits - 1) - 1;
+                var min = -Math.Pow(2, bits - 1);
+
+                if (inputInt > max)
+                {
+                    throw new ArgumentException($"The max number allowed for this register is {max}.");
+                }
+
+                if (inputInt < min)
+                {
+                    throw new ArgumentException($"The minimum number allowed for this register is {min}.");
+                }
+
+                if (inputInt < 0)
+                {
+                    //convert the negative number to 2's complement
+
+                    inputInt++;
+                    inputInt *= -1;
+
+                    return "1" + Convert.ToString(inputInt, 2).PadLeft(bits - 1, '0')
+                        .Replace('0', '-')
+                        .Replace('1', '_')
+                        .Replace('-', '1')
+                        .Replace('_', '0');
+                }
+
+                return Convert.ToString(inputInt, 2).PadLeft(bits, '0');
+            }
+            catch (Exception error)
+            {
+                Log.Error(error);
+                return GetInputForReg(reg);
             }
         }
         public static string GetSaveTo()
@@ -269,6 +382,10 @@ namespace Synthesize
 
                 //5. Datapath Generation in VHDL:
                 var dataPathGenerator = new DataPathGenerator(multiplexorGenerator);
+                
+                //6. Get test cases
+                var testCases = GetTestCases(dataPathGenerator).ToArray();
+
                 var saveFolder = GetSaveTo();
                 if (saveFolder == null)
                 {
@@ -291,10 +408,13 @@ namespace Synthesize
                 {
                     return;
                 }
-                testBench = GetSaveStream(Path.Combine(saveFolder, fileName + "_tb.vhd"));
-                if (testBench == null)
+                if (testCases.Length > 0)
                 {
-                    return;
+                    testBench = GetSaveStream(Path.Combine(saveFolder, fileName + "_tb.vhd"));
+                    if (testBench == null)
+                    {
+                        return;
+                    }
                 }
 
                 using (dataPath)
@@ -309,9 +429,12 @@ namespace Synthesize
                 {
                     dataPathGenerator.SaveDesign(design);
                 }
-                using (testBench)
+                if (testCases.Length > 0)
                 {
-                    dataPathGenerator.SaveTestBench(testBench);
+                    using (testBench)
+                    {
+                        dataPathGenerator.SaveTestBench(testBench, testCases);
+                    }
                 }
                 
                 Console.ForegroundColor = ConsoleColor.Yellow;

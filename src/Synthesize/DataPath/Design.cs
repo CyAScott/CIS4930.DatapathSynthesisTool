@@ -14,13 +14,12 @@ namespace Synthesize.DataPath
             stream.WriteLine("\tport");
             stream.WriteLine("\t(");
             var registers = AifFile.Registers.Values.Where(reg => reg is InputRegister || reg is OutputRegister).ToArray();
-            foreach (var item in registers)
+            foreach (var group in registers
+                .GroupBy(item => $"{(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0)"))
             {
-                stream.WriteLine($"\t\t{item.Name} : {(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0);");
+                stream.WriteLine($"\t\t{string.Join(", ", group.Select(reg => reg.Name))} : {group.Key};");
             }
-            stream.WriteLine("\t\tclock : IN std_logic;");
-            stream.WriteLine("\t\ts_tart : IN std_logic;");
-            stream.WriteLine("\t\tclear : IN std_logic;");
+            stream.WriteLine("\t\tclear, clock, s_tart : IN std_logic;");
             stream.WriteLine("\t\tfinish : OUT std_logic");
             stream.WriteLine("\t);");
             stream.WriteLine("end input;");
@@ -60,13 +59,12 @@ namespace Synthesize.DataPath
             stream.WriteLine("\tcomponent input_controller");
             stream.WriteLine("\t\tport");
             stream.WriteLine("\t\t(");
-            stream.WriteLine("\t\t\tclock, reset : IN std_logic;");
-            stream.WriteLine("\t\t\ts_tart : IN std_logic;");
+            stream.WriteLine("\t\t\tclock, reset, s_tart : IN std_logic;");
             stream.WriteLine("\t\t\tfinish : OUT std_logic;");
             stream.WriteLine($"\t\t\tcontrol_out : OUT std_logic_vector(0 to {ControllerBusBitWidth - 1})");
             stream.WriteLine("\t\t);");
             stream.WriteLine("\tend component;");
-            stream.WriteLine("\tfor all : input_controller use entity Work.input_controller(moore);");
+            stream.WriteLine("\tfor all : input_controller use entity work.input_controller(moore);");
         }
         private void writeDesignDataPath(StreamWriter stream, RegisterBase[] registers)
         {
@@ -92,32 +90,28 @@ namespace Synthesize.DataPath
             stream.WriteLine("\tcomponent input_dp");
             stream.WriteLine("\t\tport");
             stream.WriteLine("\t\t(");
-            foreach (var item in registers)
+            foreach (var group in registers
+                .GroupBy(item => $"{(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0)"))
             {
-                stream.WriteLine($"\t\t\t{item.Name} : {(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0);");
+                stream.WriteLine($"\t\t\t{string.Join(", ", group.Select(reg => reg.Name))} : {group.Key};");
             }
-            stream.WriteLine("\t\t\tclock : IN std_logic;");
-            stream.WriteLine("\t\t\ts_tart : IN std_logic;");
-            stream.WriteLine("\t\t\tclear : IN std_logic;");
-            stream.WriteLine("\t\t\tfinish : OUT std_logic");
+            stream.WriteLine($"\t\t\tctrl : IN std_logic_vector(0 to {ControllerBusBitWidth - 1});");
+            stream.WriteLine("\t\t\tclear, clock : IN std_logic");
             stream.WriteLine("\t\t);");
             stream.WriteLine("\tend component;");
-            stream.WriteLine("\tfor all : input_dp use entity Work.input_dp(rtl);");
+            stream.WriteLine("\tfor all : input_dp use entity work.input_dp(rtl);");
         }
 
         /// <summary>
         /// Generates the VHDL file that takes the input and sends down the data path then maps the output to the outputs.
         /// </summary>
-        public void SaveDesign(StreamWriter stream, bool signalFile = false)
+        public void SaveDesign(StreamWriter stream)
         {
             writeDesignComments(stream);
 
-            if (!signalFile)
-            {
-                stream.WriteLine();
-                stream.WriteLine("library IEEE;");
-                stream.WriteLine("use IEEE.std_logic_1164.all;");
-            }
+            stream.WriteLine();
+            stream.WriteLine("library IEEE;");
+            stream.WriteLine("use IEEE.std_logic_1164.all;");
 
             var registers = writeDesignEntity(stream);
 

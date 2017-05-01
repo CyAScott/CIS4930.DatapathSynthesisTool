@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -16,17 +17,7 @@ namespace Synthesize.Tests
     [TestFixture]
     public class DataPathGeneratorTests
     {
-        private void printSave(ILogger log, Action<StreamWriter, bool> writer)
-        {
-            using (var stream = new MemoryStream())
-            using (var writeStream = new StreamWriter(stream))
-            {
-                writer(writeStream, false);
-                writeStream.Flush();
-                log.Info(Encoding.UTF8.GetString(stream.ToArray()));
-            }
-        }
-        private void test(Func<AifFile> getFile)
+        private void test(Func<AifFile> getFile, Dictionary<string, string> testCase = null)
         {
             TestLogger.Setup();
             
@@ -37,18 +28,33 @@ namespace Synthesize.Tests
             schedule.BuildSchedule();
 
             var dataPathGenerator = new DataPathGenerator(new MultiplexerGenerator(new RegisterAllocator(new FunctionalUnitAllocator(schedule))));
-            
-            Debug.WriteLine(nameof(dataPathGenerator.SaveController));
-            printSave(log, dataPathGenerator.SaveController);
 
-            Debug.WriteLine(nameof(dataPathGenerator.SaveDesign));
-            printSave(log, dataPathGenerator.SaveDesign);
 
-            Debug.WriteLine(nameof(dataPathGenerator.SaveDataPath));
-            printSave(log, dataPathGenerator.SaveDataPath);
+            using (var stream = new MemoryStream())
+            using (var writeStream = new StreamWriter(stream))
+            {
+                if (testCase != null)
+                {
+                    Debug.WriteLine(nameof(dataPathGenerator.SaveTestBench));
+                    dataPathGenerator.SaveTestBench(writeStream, new[]
+                    {
+                        testCase
+                    });
+                }
 
-            //Debug.WriteLine(nameof(dataPathGenerator.SaveTestBench));
-            //printSave(log, dataPathGenerator.SaveTestBench);
+                Debug.WriteLine(nameof(dataPathGenerator.SaveController));
+                dataPathGenerator.SaveController(writeStream);
+
+                Debug.WriteLine(nameof(dataPathGenerator.SaveDataPath));
+                dataPathGenerator.SaveDataPath(writeStream, true);
+
+                Debug.WriteLine(nameof(dataPathGenerator.SaveDesign));
+                dataPathGenerator.SaveDesign(writeStream);
+
+                writeStream.Flush();
+                log.Info(Encoding.UTF8.GetString(stream.ToArray()));
+            }
+
         }
         [Test]
         public void TestBookExample()
@@ -63,7 +69,21 @@ namespace Synthesize.Tests
         [Test]
         public void TestFir()
         {
-            test(() => AifFileTests.Fir);
+            test(() => AifFileTests.Fir, new Dictionary<string, string>
+            {
+                {"c1", Convert.ToString(1, 2).PadLeft(8, '0')},
+                {"x0", Convert.ToString(2, 2).PadLeft(8, '0')},
+                {"c2", Convert.ToString(3, 2).PadLeft(8, '0')},
+                {"x1", Convert.ToString(4, 2).PadLeft(8, '0')},
+                {"c3", Convert.ToString(5, 2).PadLeft(8, '0')},
+                {"x2", Convert.ToString(6, 2).PadLeft(8, '0')},
+                {"c4", Convert.ToString(7, 2).PadLeft(8, '0')},
+                {"x3", Convert.ToString(8, 2).PadLeft(8, '0')},
+                {"c5", Convert.ToString(9, 2).PadLeft(8, '0')},
+                {"x4", Convert.ToString(10, 2).PadLeft(8, '0')},
+
+                {"yout", Convert.ToString(10, 2).PadLeft(190, '0')}
+            });
         }
         [Test]
         public void TestIir()

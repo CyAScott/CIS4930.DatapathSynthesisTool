@@ -53,14 +53,20 @@ namespace Synthesize.DataPath
         private void writeDataPathComponents(StreamWriter stream)
         {
             stream.WriteLine();
-            stream.WriteLine("architecture rtl of input_dp is");
+            stream.WriteTextResource("c_multiplexer", "\t");
+            stream.WriteLine("\tfor all : c_multiplexer use entity work.c_multiplexer(behavior);");
+
+            stream.WriteLine();
+            stream.WriteTextResource("c_register", "\t");
+            stream.WriteLine("\tfor all : c_register use entity work.c_register(behavior);");
+
             foreach (var unit in Functional.Units
                 .Select(unit => unit.VhdlCodeFile)
                 .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 stream.WriteLine();
                 stream.WriteTextResource(unit, "\t");
-                stream.WriteLine($"\t-- for all : {unit} use entity Beh_Lib.{unit}(behavior);");
+                stream.WriteLine($"\tfor all : {unit} use entity work.{unit}(behavior);");
             }
         }
         private void writeDataPathEntity(StreamWriter stream)
@@ -70,13 +76,13 @@ namespace Synthesize.DataPath
             stream.WriteLine("\tport");
             stream.WriteLine("\t(");
             var registers = AifFile.Registers.Values.Where(reg => reg is InputRegister || reg is OutputRegister).ToArray();
-            foreach (var item in registers)
+            foreach (var group in registers
+                .GroupBy(item => $"{(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0)"))
             {
-                stream.WriteLine($"\t\t{item.Name} : {(item is InputRegister ? "IN" : "OUT")} std_logic_vector({item.Bits - 1} downto 0);");
+                stream.WriteLine($"\t\t{string.Join(", ", group.Select(reg => reg.Name))} : {group.Key};");
             }
             stream.WriteLine($"\t\tctrl : IN std_logic_vector({ControllerBusBitWidth - 1} downto 0);");
-            stream.WriteLine("\t\tclear : IN std_logic;");
-            stream.WriteLine("\t\tclock : IN std_logic");
+            stream.WriteLine("\t\tclear, clock : IN std_logic");
             stream.WriteLine("\t);");
             stream.WriteLine("end input_dp;");
         }
@@ -145,7 +151,7 @@ namespace Synthesize.DataPath
 
             //wire up selector
             var controlIndex = GetControlIndex(multiplexer);
-            stream.WriteLine($"\t\t\tmux_select({multiplexer.SelectionBitSize - 1} downto 0) => ctrl({controlIndex + multiplexer.SelectionBitSize} downto {controlIndex}),");
+            stream.WriteLine($"\t\t\tmux_select({multiplexer.SelectionBitSize - 1} downto 0) => ctrl({controlIndex + multiplexer.SelectionBitSize - 1} downto {controlIndex}),");
 
             //wire up the output
             stream.WriteLine($"\t\t\toutput => {multiplexer.Name}_out");
@@ -216,27 +222,53 @@ namespace Synthesize.DataPath
 
             stream.WriteLine("\t\t);");
         }
+        private void writeDataPathVhdlComponents(StreamWriter stream)
+        {
+            stream.WriteLine();
+            stream.WriteTextResource("CommentLine");
+            stream.WriteLine("--");
+            stream.WriteLine("-- Unit components");
+            stream.WriteLine("--");
+            stream.WriteTextResource("CommentLine");
+
+            stream.WriteLine();
+            stream.WriteVhdlFile("c_multiplexer");
+
+            stream.WriteLine();
+            stream.WriteVhdlFile("c_register");
+
+            foreach (var codeFile in Functional.Units
+                .Select(unit => unit.VhdlCodeFile)
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                stream.WriteLine();
+                stream.WriteVhdlFile(codeFile);
+            }
+        }
         private void writeDataPathWires(StreamWriter stream)
         {
             stream.WriteLine();
             stream.WriteLine("\t-- Outputs of registers");
-            foreach (var unit in RegisterAllocator.Units)
+            foreach (var group in RegisterAllocator.Units
+                .GroupBy(unit => $"std_logic_vector({unit.Bits - 1} downto 0)"))
             {
-                stream.WriteLine($"\tsignal {unit.Name}_out : std_logic_vector({unit.Registers.Max(reg => reg.Bits) - 1} downto 0);");
+                stream.WriteLine($"\tsignal {string.Join(", ", group.Select(unit => unit.Name + "_out"))} : {group.Key};");
             }
 
             stream.WriteLine();
             stream.WriteLine("\t-- Outputs of FUs");
-            foreach (var unit in Functional.Units)
+            foreach (var group in Functional.Units
+                .GroupBy(unit => $"std_logic_vector({unit.Bits - 1} downto 0)"))
             {
-                stream.WriteLine($"\tsignal {unit.Name}_out : std_logic_vector({unit.Bits - 1} downto 0);");
+                stream.WriteLine($"\tsignal {string.Join(", ", group.Select(unit => unit.Name + "_out"))} : {group.Key};");
             }
 
             stream.WriteLine();
             stream.WriteLine("\t-- Outputs of Interconnect Units");
-            foreach (var multiplexer in Multiplexers.Multiplexers)
+            foreach (var group in Multiplexers.Multiplexers
+                .GroupBy(multiplexer => $"std_logic_vector({multiplexer.OutputBitSize - 1} downto 0)"))
             {
-                stream.WriteLine($"\tsignal {multiplexer.Name}_out : std_logic_vector({multiplexer.OutputBitSize - 1} downto 0);");
+                stream.WriteLine($"\tsignal {string.Join(", ", group.Select(multiplexer => multiplexer.Name + "_out"))} : {group.Key};");
             }
         }
 
@@ -245,16 +277,21 @@ namespace Synthesize.DataPath
         /// </summary>
         public void SaveDataPath(StreamWriter stream, bool signalFile = false)
         {
-            writeDataPathComments(stream);
-
-            if (!signalFile)
+            if (signalFile)
             {
-                stream.WriteLine();
-                stream.WriteLine("library IEEE;");
-                stream.WriteLine("use IEEE.std_logic_1164.all;");
+                writeDataPathVhdlComponents(stream);
             }
 
+            writeDataPathComments(stream);
+
+            stream.WriteLine();
+            stream.WriteLine("library IEEE;");
+            stream.WriteLine("use IEEE.std_logic_1164.all;");
+
             writeDataPathEntity(stream);
+
+            stream.WriteLine();
+            stream.WriteLine("architecture rtl of input_dp is");
 
             writeDataPathComponents(stream);
 

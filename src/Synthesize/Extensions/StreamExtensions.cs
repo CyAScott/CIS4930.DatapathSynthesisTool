@@ -15,5 +15,16 @@ namespace Synthesize.Extensions
                 }
             }
         }
+        public static void WriteVhdlFile(this StreamWriter writer, string codeFile)
+        {
+            using (var stream = typeof(StreamExtensions).Assembly.GetManifestResourceStream($"Synthesize.DataPath.Vhdl.{codeFile}.vhd") ?? new MemoryStream())
+            using (var reader = new StreamReader(stream))
+            {
+                while (!reader.EndOfStream)
+                {
+                    writer.WriteLine(reader.ReadLine()?.TrimEnd());
+                }
+            }
+        }
     }
 }
