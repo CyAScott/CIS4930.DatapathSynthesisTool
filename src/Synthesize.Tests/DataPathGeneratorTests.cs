@@ -77,12 +77,12 @@ namespace Synthesize.Tests
                 {"x1", Convert.ToString(4, 2).PadLeft(8, '0')},
                 {"c3", Convert.ToString(5, 2).PadLeft(8, '0')},
                 {"x2", Convert.ToString(6, 2).PadLeft(8, '0')},
-                {"c4", Convert.ToString(7, 2).PadLeft(8, '0')},
-                {"x3", Convert.ToString(8, 2).PadLeft(8, '0')},
-                {"c5", Convert.ToString(9, 2).PadLeft(8, '0')},
-                {"x4", Convert.ToString(10, 2).PadLeft(8, '0')},
+                {"c4", Convert.ToString(3, 2).PadLeft(8, '0')},
+                {"x3", Convert.ToString(1, 2).PadLeft(8, '0')},
+                {"c5", Convert.ToString(4, 2).PadLeft(8, '0')},
+                {"x4", Convert.ToString(2, 2).PadLeft(8, '0')},
 
-                {"yout", Convert.ToString(10, 2).PadLeft(190, '0')}
+                {"yout", Convert.ToString(97, 2).PadLeft(8, '0')}
             });
         }
         [Test]

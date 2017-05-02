@@ -19,16 +19,22 @@ entity c_multiplexer is
 end c_multiplexer;
 
 architecture behavior of c_multiplexer is
+	signal sel : integer;
 begin
-	P1 : process (mux_select, input)
-		variable sel : integer;
+	process (mux_select)
+		variable val : integer;
 	begin
-		sel := 0;
-		for i in select_size - 1 to 0 loop
+		val := 0;
+		for i in select_size - 1 downto 0 loop
 			if mux_select(i) = '1' then
-				sel := 2 ** i + sel;
+				val := 2 ** i + val;
 			end if;
 		end loop;
+		sel <= val;
+	end process;
+
+	process (input, sel)
+	begin
         output <= input(((sel + 1) * width - 1) downto (sel * width));
-	end process P1;
+	end process;
 end behavior;

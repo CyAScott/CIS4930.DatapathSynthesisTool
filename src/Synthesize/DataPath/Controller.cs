@@ -120,8 +120,7 @@ namespace Synthesize.DataPath
         }
         private void writeControllerState(StreamWriter stream, int cycle, int stateCount)
         {
-            stream.WriteLine($"\t\t\twhen S{cycle:00} =>");
-            stream.WriteLine($"\t\t\t\t-- Cycle: {cycle}");
+            stream.WriteLine($"\t\t\twhen {cycle} =>");
 
             var index = 0;
             var busValue = new StringBuilder();
@@ -146,23 +145,23 @@ namespace Synthesize.DataPath
             if (cycle + 1 < stateCount)
             {
                 stream.WriteLine("\t\t\t\tinternal_finish <= '0';");
-                if (cycle == 0)
-                {
-                    stream.WriteLine("\t\t\t\tcase s_tart is");
-                    stream.WriteLine("\t\t\t\t\twhen '1' => next_state <= S01;");
-                    stream.WriteLine("\t\t\t\t\twhen '0' => next_state <= S00;");
-                    stream.WriteLine("\t\t\t\t\twhen others => null;");
-                    stream.WriteLine("\t\t\t\tend case;");
-                }
-                else
-                {
-                    stream.WriteLine($"\t\t\t\tnext_state <= S{cycle + 1:00};");
-                }
+                //if (cycle == 0)
+                //{
+                //    stream.WriteLine("\t\t\t\tcase s_tart is");
+                //    stream.WriteLine("\t\t\t\t\twhen '1' => next_state <= 1;");
+                //    stream.WriteLine("\t\t\t\t\twhen '0' => next_state <= 0;");
+                //    stream.WriteLine("\t\t\t\t\twhen others => null;");
+                //    stream.WriteLine("\t\t\t\tend case;");
+                //}
+                //else
+                //{
+                    stream.WriteLine($"\t\t\t\tnext_state <= {cycle + 1};");
+                //}
             }
             else
             {
                 stream.WriteLine("\t\t\t\tinternal_finish <= '1';");
-                stream.WriteLine("\t\t\t\tnext_state <= S00;");
+                stream.WriteLine("\t\t\t\tnext_state <= 0;");
             }
         }
         private void writeControllerValue(StreamWriter stream, string value)
@@ -206,9 +205,7 @@ namespace Synthesize.DataPath
             stream.WriteLine();
             stream.WriteLine("architecture moore of input_controller is");
             stream.WriteLine();
-            stream.WriteLine($"\ttype state_enum is ( {string.Join(", ", Enumerable.Range(0, stateCount).Select(index => $"S{index:00}"))} );");
-            stream.WriteLine();
-            stream.WriteLine("\tsignal current_state, next_state : state_enum := S00;");
+            stream.WriteLine("\tsignal current_state, next_state : integer := 0;");
             stream.WriteLine("\tsignal internal_finish : std_logic := '0';");
             stream.WriteLine($"\tsignal control_bus : std_logic_vector(0 to {ControllerBusBitWidth - 1}) := \"{new string('0', ControllerBusBitWidth)}\";");
             stream.WriteLine();
@@ -217,29 +214,30 @@ namespace Synthesize.DataPath
             stream.WriteLine();
             stream.WriteLine("\tprocess(clock, reset)");
             stream.WriteLine("\tbegin");
+
             stream.WriteLine("\t\tif (reset = '1') then");
-            stream.WriteLine("\t\t\tcurrent_state <= S00;");
-            stream.WriteLine("\t\telsif (clock = '1' and clock'event) then");
-            stream.WriteLine("\t\t\tcurrent_state <= next_state;");
+            stream.WriteLine("\t\t\tcurrent_state <= 0;");
+            stream.WriteLine("\t\tend if;");
+            stream.WriteLine();
+            stream.WriteLine("\t\tif (clock'event) then");
+            stream.WriteLine("\t\t\tif (clock = '0') then");
+            stream.WriteLine("\t\t\t\tcurrent_state <= next_state;");
+            stream.WriteLine("\t\t\telse");
+            stream.WriteLine("\t\t\t\tcontrol_out <= control_bus;");
+            stream.WriteLine("\t\t\t\tfinish <= internal_finish;");
+            stream.WriteLine("\t\t\tend if;");
             stream.WriteLine("\t\tend if;");
             stream.WriteLine("\tend process;");
 
             stream.WriteLine();
-            stream.WriteLine("\tprocess");
-            stream.WriteLine("\tbegin");
-            stream.WriteLine("\t\twait until clock = '0';");
-            stream.WriteLine("\t\tcontrol_out <= control_bus;");
-            stream.WriteLine("\t\tfinish <= internal_finish;");
-            stream.WriteLine("\tend process;");
-
-            stream.WriteLine();
-            stream.WriteLine("\tprocess(current_state, s_tart)");
+            stream.WriteLine("\tprocess(current_state)");
             stream.WriteLine("\tbegin");
             stream.WriteLine("\t\tcase current_state is");
             foreach (var cycle in Enumerable.Range(0, stateCount))
             {
                 writeControllerState(stream, cycle, stateCount);
             }
+            stream.WriteLine("\t\t\twhen others => null;");
             stream.WriteLine("\t\tend case;");
             stream.WriteLine("\tend process;");
             stream.WriteLine("end moore;");
