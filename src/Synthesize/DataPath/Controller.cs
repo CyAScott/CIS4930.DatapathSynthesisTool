@@ -208,9 +208,9 @@ namespace Synthesize.DataPath
             stream.WriteLine();
             stream.WriteLine($"\ttype state_enum is ( {string.Join(", ", Enumerable.Range(0, stateCount).Select(index => $"S{index:00}"))} );");
             stream.WriteLine();
-            stream.WriteLine("\tsignal current_state, next_state : state_enum;");
-            stream.WriteLine("\tsignal internal_finish : std_logic;");
-            stream.WriteLine($"\tsignal control_bus : std_logic_vector(0 to {ControllerBusBitWidth - 1});");
+            stream.WriteLine("\tsignal current_state, next_state : state_enum := S00;");
+            stream.WriteLine("\tsignal internal_finish : std_logic := '0';");
+            stream.WriteLine($"\tsignal control_bus : std_logic_vector(0 to {ControllerBusBitWidth - 1}) := \"{new string('0', ControllerBusBitWidth)}\";");
             stream.WriteLine();
             stream.WriteLine("begin");
 

@@ -21,17 +21,14 @@ end c_multiplexer;
 architecture behavior of c_multiplexer is
 begin
 	P1 : process (mux_select, input)
-		variable control_val : integer := 0;
-		variable base_val : integer := 1;
+		variable sel : integer;
 	begin
-		base_val := 1;
-		control_val := 0;
-		for i in 0 to (select_size - 1) loop
-			if (mux_select(i) = '1') then
-				control_val := control_val + base_val;
+		sel := 0;
+		for i in select_size - 1 to 0 loop
+			if mux_select(i) = '1' then
+				sel := 2 ** i + sel;
 			end if;
-			base_val := base_val * 2;
 		end loop;
-		output <= input(((control_val + 1) * width - 1) downto (control_val) * width);
+        output <= input(((sel + 1) * width - 1) downto (sel * width));
 	end process P1;
 end behavior;

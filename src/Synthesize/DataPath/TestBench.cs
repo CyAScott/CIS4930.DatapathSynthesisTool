@@ -55,8 +55,7 @@ namespace Synthesize.DataPath
             {
                 stream.WriteLine($"\tsignal {string.Join(", ", group.Select(reg => reg.Name))} : {group.Key};");
             }
-            stream.WriteLine("\tsignal clear, s_tart : std_logic := '1';");
-            stream.WriteLine("\tsignal clock, finish : std_logic := '0';");
+            stream.WriteLine("\tsignal clear, clock, finish, s_tart : std_logic := '0';");
         }
 
         public void SaveTestBench(StreamWriter stream, Dictionary<string, string>[] inputAndOutputs)
@@ -83,12 +82,9 @@ namespace Synthesize.DataPath
             writeTestBenchTestUnit(stream, registers);
 
             stream.WriteLine();
-            stream.WriteLine("\tsimulate: process");
+            stream.WriteLine("\tprocess");
             stream.WriteLine("\t\tbegin");
-
-            stream.WriteLine();
             stream.WriteLine("\t\t\twait for 1 ns;");
-            stream.WriteLine("\t\t\tclock <= '1'; wait for 1 ns;");
 
             foreach (var testCase in inputAndOutputs)
             {
@@ -96,7 +92,14 @@ namespace Synthesize.DataPath
                 foreach (var reg in registers.OfType<InputRegister>())
                 {
                     stream.WriteLine($"\t\t\t{reg.Name} <= \"{testCase[reg.Name]}\";");
-
+                }
+                stream.WriteLine("\t\t\ts_tart <= '1';");
+                stream.WriteLine("\t\t\tclock <= '1'; wait for 1 ns;");
+                stream.WriteLine("\t\t\tclock <= '0'; wait for 1 ns;");
+                for (var cycle = 1; cycle < Scheduler.Cycles.Length; cycle++)
+                {
+                    stream.WriteLine("\t\t\tclock <= '1'; wait for 1 ns;");
+                    stream.WriteLine("\t\t\tclock <= '0'; wait for 1 ns;");
                 }
             }
 

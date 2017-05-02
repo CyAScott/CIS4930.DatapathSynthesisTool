@@ -6,6 +6,6 @@ component c_adder
 	port
 	(
 		input1, input2 : in std_logic_vector((width - 1) downto 0);
-		output : out std_logic_vector(width downto 0)
+		output : out std_logic_vector((width - 1) downto 0)
 	);
 end component;

@@ -11,7 +11,7 @@ entity c_adder is
 	port
 	(
 		input1, input2 : in std_logic_vector((width - 1) downto 0);
-		output : out std_logic_vector(width downto 0)
+		output : out std_logic_vector((width - 1) downto 0)
 	);
 end c_adder;
 
@@ -20,7 +20,7 @@ begin
 	P0 : process (input1, input2)
 		variable carry : std_logic := '0';
 		variable overflow : std_logic := '0';
-		variable temp : std_logic_vector(width downto 0);
+		variable temp : std_logic_vector(width - 1 downto 0);
 	begin
 		for i in 0 to width - 1 loop
 			if input1(i) = '0' and input2(i) = '0' and carry = '0' then
@@ -50,18 +50,6 @@ begin
 			end if;
 		end loop;
 		
-		temp(width) := carry;
-		carry := '0';
 		output <= temp;
-
-		if ((input1(width - 1) = '0') and (input2(width - 1) = '0') and (temp(width) = '1')) then
-			overflow := '1';
-		elsif ((input1(width - 1) = '1') and (input2(width - 1) = '1') and (temp(width) = '0')) then
-			overflow := '1';
-		elsif ((input1(width - 1) = '0') and (input2(width - 1) = '1') and (temp(width) = '1')) then
-			overflow := '1';
-		elsif ((input1(width - 1) = '1') and (input2(width - 1) = '0') and (temp(width) = '0')) then
-			overflow := '1';
-		end if;
 	end process;
 end behavior;

@@ -81,7 +81,7 @@ namespace Synthesize.DataPath
             {
                 stream.WriteLine($"\t\t{string.Join(", ", group.Select(reg => reg.Name))} : {group.Key};");
             }
-            stream.WriteLine($"\t\tctrl : IN std_logic_vector({ControllerBusBitWidth - 1} downto 0);");
+            stream.WriteLine($"\t\tctrl : IN std_logic_vector(0 to {ControllerBusBitWidth - 1});");
             stream.WriteLine("\t\tclear, clock : IN std_logic");
             stream.WriteLine("\t);");
             stream.WriteLine("end input_dp;");
@@ -138,7 +138,19 @@ namespace Synthesize.DataPath
                 var register = item as RegisterBase;
                 if (register != null)
                 {
-                    inputBitIndex += writeDataPathMultiplexerRegister(stream, inputBitIndex, register);
+                    if (register is InputRegister)
+                    {
+                        stream.WriteLine($"\t\t\tinput({inputBitIndex + register.Bits - 1} downto {inputBitIndex}) => {register.Name}({register.Bits - 1} downto 0), -- {register.Name}");
+                        inputBitIndex += register.Bits;
+                    }
+                    else
+                    {
+                        var operation = AifFile.Operations.Values.First(op => op.Output == register);
+                        var operationUnit = Functional.Units.First(unit => unit.Operations.Contains(operation));
+                        
+                        stream.WriteLine($"\t\t\tinput({inputBitIndex + register.Bits - 1} downto {inputBitIndex}) => {operationUnit.Name}_out({register.Bits - 1} downto 0), -- {register.Name}");
+                        inputBitIndex += register.Bits;
+                    }
                 }
                 else
                 {
@@ -151,7 +163,10 @@ namespace Synthesize.DataPath
 
             //wire up selector
             var controlIndex = GetControlIndex(multiplexer);
-            stream.WriteLine($"\t\t\tmux_select({multiplexer.SelectionBitSize - 1} downto 0) => ctrl({controlIndex + multiplexer.SelectionBitSize - 1} downto {controlIndex}),");
+            stream.Write("\t\t\tmux_select");
+            stream.WriteLine(multiplexer.SelectionBitSize == 1 ?
+                $"(0) => ctrl({controlIndex})," :
+                $"({multiplexer.SelectionBitSize - 1} downto 0) => ctrl({controlIndex} to {controlIndex + multiplexer.SelectionBitSize - 1}),");
 
             //wire up the output
             stream.WriteLine($"\t\t\toutput => {multiplexer.Name}_out");
