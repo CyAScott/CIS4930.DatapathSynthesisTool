@@ -36,7 +36,7 @@ namespace Synthesize.DataPath
             stream.Write("\t\t\t\tcontrol_bus(");
 
             var value = multiplexer.GetSelectValueAndNameFrom(cycle);
-
+            
             stream.Write(value.Item1.Length == 1 ?
                 $"{index}) <= '{value.Item1}'" :
                 $"{index} to {index + value.Item1.Length - 1}) <= \"{value.Item1}\"");
@@ -145,18 +145,7 @@ namespace Synthesize.DataPath
             if (cycle + 1 < stateCount)
             {
                 stream.WriteLine("\t\t\t\tinternal_finish <= '0';");
-                //if (cycle == 0)
-                //{
-                //    stream.WriteLine("\t\t\t\tcase s_tart is");
-                //    stream.WriteLine("\t\t\t\t\twhen '1' => next_state <= 1;");
-                //    stream.WriteLine("\t\t\t\t\twhen '0' => next_state <= 0;");
-                //    stream.WriteLine("\t\t\t\t\twhen others => null;");
-                //    stream.WriteLine("\t\t\t\tend case;");
-                //}
-                //else
-                //{
-                    stream.WriteLine($"\t\t\t\tnext_state <= {cycle + 1};");
-                //}
+                stream.WriteLine($"\t\t\t\tnext_state <= {cycle + 1};");
             }
             else
             {
@@ -171,7 +160,7 @@ namespace Synthesize.DataPath
             var hexDigits = new List<char>();
             for (var index = value.Length - 1; index >= 0; index -= 4)
             {
-                var fourBits = value.Substring(Math.Max(0, index - 3), Math.Min(4, value.Length - index + 3)).PadLeft(4, '0');
+                var fourBits = value.Substring(Math.Max(0, index - 3), Math.Min(4, value.Length - index + 3)).PadLeft(4, '0').Replace('X', '0');
 
                 hexDigits.Add(Convert.ToByte(fourBits, 2).ToString("x1")[0]);
             }
@@ -211,23 +200,6 @@ namespace Synthesize.DataPath
             stream.WriteLine();
             stream.WriteLine("begin");
 
-            stream.WriteLine();
-            stream.WriteLine("\tprocess(clock, reset)");
-            stream.WriteLine("\tbegin");
-
-            stream.WriteLine("\t\tif (reset = '1') then");
-            stream.WriteLine("\t\t\tcurrent_state <= 0;");
-            stream.WriteLine("\t\tend if;");
-            stream.WriteLine();
-            stream.WriteLine("\t\tif (clock'event) then");
-            stream.WriteLine("\t\t\tif (clock = '0') then");
-            stream.WriteLine("\t\t\t\tcurrent_state <= next_state;");
-            stream.WriteLine("\t\t\telse");
-            stream.WriteLine("\t\t\t\tcontrol_out <= control_bus;");
-            stream.WriteLine("\t\t\t\tfinish <= internal_finish;");
-            stream.WriteLine("\t\t\tend if;");
-            stream.WriteLine("\t\tend if;");
-            stream.WriteLine("\tend process;");
 
             stream.WriteLine();
             stream.WriteLine("\tprocess(current_state)");
@@ -240,6 +212,23 @@ namespace Synthesize.DataPath
             stream.WriteLine("\t\t\twhen others => null;");
             stream.WriteLine("\t\tend case;");
             stream.WriteLine("\tend process;");
+
+
+            stream.WriteLine();
+            stream.WriteLine("\tprocess(clock, reset)");
+            stream.WriteLine("\tbegin");
+            stream.WriteLine("\t\tif (reset = '1' and reset'event) then");
+            stream.WriteLine("\t\t\tcurrent_state <= 0;");
+            stream.WriteLine("\t\t\tcontrol_out <= control_bus;");
+            stream.WriteLine("\t\t\tfinish <= internal_finish;");
+            stream.WriteLine("\t\telsif (clock = '1' and clock'event) then");
+            stream.WriteLine("\t\t\tcurrent_state <= next_state;");
+            stream.WriteLine("\t\t\tcontrol_out <= control_bus;");
+            stream.WriteLine("\t\t\tfinish <= internal_finish;");
+            stream.WriteLine("\t\tend if;");
+            stream.WriteLine("\tend process;");
+
+            stream.WriteLine();
             stream.WriteLine("end moore;");
         }
     }

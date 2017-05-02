@@ -11,7 +11,7 @@ namespace Synthesize.Tests
             var config = new LoggingConfiguration();
             var target = new ColoredConsoleTarget
             {
-                Layout = "${message}"
+                Layout = "-- ${message}"
             };
             config.AddTarget("console", target);
             var rule = new LoggingRule("*", LogLevel.Info, target);

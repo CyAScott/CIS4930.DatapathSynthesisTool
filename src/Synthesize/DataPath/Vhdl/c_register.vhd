@@ -18,14 +18,14 @@ end c_register;
 
 architecture behavior of c_register is
 begin
-	process (clock, clear, input)
+	process (clock, clear, input, wr)
 		variable interim_val : std_logic_vector((width - 1) downto 0);
 	begin
-		if (clear = '1') then
+		if (clear = '1' and clear'event) then
 			for i in width - 1 downto 0 loop
 				interim_val(i) := '0';
 			end loop;
-		elsif (wr = '1' and clock = '0' and (clock'event or input'event)) then
+		elsif (wr = '1' and clock = '1' and (clock'event or input'event or wr'event)) then
 			interim_val := input;
 		end if;
 

@@ -21,7 +21,7 @@ namespace Synthesize.Allocation
                     .ToArray());
 
                 register.StartCycle = register is InputRegister ? 0 : operationsThatUseRegister.Value.Min(op => op.CycleIndex);
-                register.StopCycle = register is OutputRegister ? Functional.Scheduler.Cycles.Length - 1 : Math.Min(operationsThatUseRegister.Value.Max(op => op.CycleIndex) + 1, Functional.Scheduler.Cycles.Length - 1);
+                register.StopCycle = register is OutputRegister ? Functional.Scheduler.Cycles.Length - 1 : operationsThatUseRegister.Value.Max(op => op.CycleIndex);
 
                 Log.Info($"{register.Name, -10} -> ({register.StartCycle:00}, {register.StopCycle:00}) {new string('_', register.StartCycle)}{new string('*', register.StopCycle - register.StartCycle + 1)}{new string('_', Functional.Scheduler.Cycles.Length - register.StopCycle - 1)}");
             }

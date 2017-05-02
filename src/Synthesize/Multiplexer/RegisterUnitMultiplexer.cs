@@ -30,7 +30,7 @@ namespace Synthesize.Multiplexer
                 })
                 .Where(item => item.reg.StartCycle <= cycle && cycle <= item.reg.StopCycle)
                 .Select(item => new Tuple<string, string>(Convert.ToString(item.val, 2).PadLeft(SelectionBitSize, '0'), item.reg.Name))
-                .FirstOrDefault() ?? new Tuple<string, string>(new string('0', SelectionBitSize), "");
+                .FirstOrDefault() ?? new Tuple<string, string>(new string('X', SelectionBitSize), "");
         }
         public override int OutputBitSize => Unit.Bits;
         public override string Name => $"MX_{Unit.Name}";

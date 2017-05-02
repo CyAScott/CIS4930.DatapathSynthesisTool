@@ -24,13 +24,15 @@ begin
 	process (mux_select)
 		variable val : integer;
 	begin
-		val := 0;
-		for i in select_size - 1 downto 0 loop
-			if mux_select(i) = '1' then
-				val := 2 ** i + val;
-			end if;
-		end loop;
-		sel <= val;
+		if (mux_select(0) /= 'X') then
+			val := 0;
+			for i in select_size - 1 downto 0 loop
+				if mux_select(i) = '1' then
+					val := 2 ** i + val;
+				end if;
+			end loop;
+			sel <= val;
+		end if;
 	end process;
 
 	process (input, sel)

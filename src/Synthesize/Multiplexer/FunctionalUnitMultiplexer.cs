@@ -33,7 +33,7 @@ namespace Synthesize.Multiplexer
                 })
                 .Where(op => op.operation.CycleIndex == cycle)
                 .Select(op => new Tuple<string, string>(Convert.ToString(op.val, 2).PadLeft(SelectionBitSize, '0'), op.operation.Name))
-                .FirstOrDefault() ?? new Tuple<string, string>(new string('0', SelectionBitSize), "");
+                .FirstOrDefault() ?? new Tuple<string, string>(new string('X', SelectionBitSize), "");
         }
         public override int OutputBitSize => Op.Max(op => op.Left.Bits + op.Right.Bits);
         public override string Name => $"MX_{Unit.Name}";
