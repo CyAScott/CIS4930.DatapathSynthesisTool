@@ -5,6 +5,7 @@ using System.Linq;
 using NLog;
 using Synthesize.Allocation;
 using Synthesize.DataPath;
+using Synthesize.Extensions;
 using Synthesize.FileParsing;
 using Synthesize.Multiplexer;
 using Synthesize.Scheduler;
@@ -382,8 +383,13 @@ namespace Synthesize
 
                 //5. Datapath Generation in VHDL:
                 var dataPathGenerator = new DataPathGenerator(multiplexorGenerator);
-                
+
                 //6. Get test cases
+                Console.ForegroundColor = ConsoleColor.Green;
+                foreach (var expression in file.AsExpressions)
+                {
+                    Console.WriteLine(expression);
+                }
                 var testCases = GetTestCases(dataPathGenerator).ToArray();
 
                 var saveFolder = GetSaveTo();
@@ -417,13 +423,32 @@ namespace Synthesize
                     }
                 }
 
-                using (dataPath)
-                {
-                    dataPathGenerator.SaveDataPath(dataPath);
-                }
                 using (controller)
                 {
                     dataPathGenerator.SaveController(controller);
+                }
+
+                foreach (var codeFile in functionalUnits.Units
+                    .Select(unit => unit.VhdlCodeFile)
+                    .Concat(new []
+                    {
+                        "c_multiplexer",
+                        "c_register"
+                    })
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    var savePath = Path.Combine(saveFolder, codeFile + ".vhd");
+                    if (!File.Exists(savePath))
+                    {
+                        using (var stream = File.CreateText(savePath))
+                        {
+                            stream.WriteVhdlFile(codeFile);
+                        }
+                    }
+                }
+                using (dataPath)
+                {
+                    dataPathGenerator.SaveDataPath(dataPath);
                 }
                 using (design)
                 {
