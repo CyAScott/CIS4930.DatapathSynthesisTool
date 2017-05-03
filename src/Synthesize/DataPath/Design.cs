@@ -99,7 +99,7 @@ namespace Synthesize.DataPath
             stream.WriteLine("\t\t\tclear, clock : IN std_logic");
             stream.WriteLine("\t\t);");
             stream.WriteLine("\tend component;");
-            stream.WriteLine("\tfor all : input_dp use entity work.input_dp(rtl);");
+            stream.WriteLine("\tfor all : input_dp use entity work.input_dp(rtl1);");
         }
 
         /// <summary>
@@ -116,7 +116,7 @@ namespace Synthesize.DataPath
             var registers = writeDesignEntity(stream);
 
             stream.WriteLine();
-            stream.WriteLine("architecture rtl of input is");
+            stream.WriteLine("architecture rtl2 of input is");
 
             writeDesignControllerComponent(stream);
 
@@ -132,7 +132,7 @@ namespace Synthesize.DataPath
 
             writeDesignDataPath(stream, registers);
 
-            stream.WriteLine("end rtl;");
+            stream.WriteLine("end rtl2;");
         }
     }
 }

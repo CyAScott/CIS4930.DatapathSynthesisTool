@@ -1,4 +1,4 @@
-﻿component c_register is
+﻿component c_register
 	generic
 	(
 		width : integer := 4

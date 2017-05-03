@@ -306,7 +306,7 @@ namespace Synthesize.DataPath
             writeDataPathEntity(stream);
 
             stream.WriteLine();
-            stream.WriteLine("architecture rtl of input_dp is");
+            stream.WriteLine("architecture rtl1 of input_dp is");
 
             writeDataPathComponents(stream);
 
@@ -339,7 +339,7 @@ namespace Synthesize.DataPath
             writeDataPathOutputs(stream);
 
             stream.WriteLine();
-            stream.WriteLine("end rtl;");
+            stream.WriteLine("end rtl1;");
         }
     }
 }

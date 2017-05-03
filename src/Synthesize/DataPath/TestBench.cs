@@ -25,7 +25,7 @@ namespace Synthesize.DataPath
             stream.WriteLine("\t\t\tfinish : OUT std_logic");
             stream.WriteLine("\t\t);");
             stream.WriteLine("\tend component;");
-            stream.WriteLine("\tfor all : input use entity work.input(rtl);");
+            stream.WriteLine("\tfor all : input use entity work.input(rtl2);");
 
             return registers;
         }
@@ -72,7 +72,7 @@ namespace Synthesize.DataPath
             stream.WriteLine("end test_me_tb;");
 
             stream.WriteLine();
-            stream.WriteLine("architecture test of test_me_tb is");
+            stream.WriteLine("architecture test_me of test_me_tb is");
 
             var registers = writeTestBenchComponents(stream);
             writeTestBenchWires(stream, registers);
@@ -117,7 +117,7 @@ namespace Synthesize.DataPath
             stream.WriteLine();
             stream.WriteLine("\t\t\twait;");
             stream.WriteLine("\tend process;");
-            stream.WriteLine("end test;");
+            stream.WriteLine("end test_me;");
         }
     }
 }
