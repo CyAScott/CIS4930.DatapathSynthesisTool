@@ -289,8 +289,8 @@ namespace Synthesize
                 }
 
                 var bits = reg.Bits;
-                var max = Math.Pow(2, bits - 1) - 1;
-                var min = -Math.Pow(2, bits - 1);
+                var max = Math.Pow(2, bits - 1);
+                var min = 0;
 
                 if (inputInt > max)
                 {
@@ -300,20 +300,6 @@ namespace Synthesize
                 if (inputInt < min)
                 {
                     throw new ArgumentException($"The minimum number allowed for this register is {min}.");
-                }
-
-                if (inputInt < 0)
-                {
-                    //convert the negative number to 2's complement
-
-                    inputInt++;
-                    inputInt *= -1;
-
-                    return "1" + Convert.ToString(inputInt, 2).PadLeft(bits - 1, '0')
-                        .Replace('0', '-')
-                        .Replace('1', '_')
-                        .Replace('-', '1')
-                        .Replace('_', '0');
                 }
 
                 return Convert.ToString(inputInt, 2).PadLeft(bits, '0');
