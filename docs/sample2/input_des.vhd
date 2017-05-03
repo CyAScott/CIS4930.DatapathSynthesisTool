@@ -20,7 +20,7 @@ entity input is
 	);
 end input;
 
-architecture rtl of input is
+architecture rtl2 of input is
 
 	component input_controller
 		port
@@ -41,7 +41,7 @@ architecture rtl of input is
 			clear, clock : IN std_logic
 		);
 	end component;
-	for all : input_dp use entity work.input_dp(rtl);
+	for all : input_dp use entity work.input_dp(rtl1);
 
 	signal sig_con_out : std_logic_vector(0 to 18);
 
@@ -91,4 +91,4 @@ begin
 			clock => clock,
 			clear => clear
 		);
-end rtl;
+end rtl2;

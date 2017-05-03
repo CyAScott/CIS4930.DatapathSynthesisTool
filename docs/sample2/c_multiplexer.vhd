@@ -19,10 +19,10 @@ entity c_multiplexer is
 end c_multiplexer;
 
 architecture behavior of c_multiplexer is
-	signal sel : integer;
+	signal sel : integer := 0;
 begin
 	process (mux_select)
-		variable val : integer;
+		variable val : integer := 0;
 	begin
 		if (mux_select(0) /= 'X') then
 			val := 0;

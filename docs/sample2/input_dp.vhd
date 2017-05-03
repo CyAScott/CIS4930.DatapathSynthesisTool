@@ -42,7 +42,7 @@ entity input_dp is
 	);
 end input_dp;
 
-architecture rtl of input_dp is
+architecture rtl1 of input_dp is
 
 	component c_multiplexer
 		generic
@@ -60,7 +60,7 @@ architecture rtl of input_dp is
 	end component;
 	for all : c_multiplexer use entity work.c_multiplexer(behavior);
 
-	component c_register is
+	component c_register
 		generic
 		(
 			width : integer := 4
@@ -377,4 +377,4 @@ begin
 	-- Primary outputs
 	i(3 downto 0) <= REG00_out(3 downto 0);
 
-end rtl;
+end rtl1;

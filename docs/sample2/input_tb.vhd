@@ -13,7 +13,7 @@ use IEEE.std_logic_1164.all;
 entity test_me_tb is
 end test_me_tb;
 
-architecture test of test_me_tb is
+architecture test_me of test_me_tb is
 
 	component input
 		port
@@ -24,7 +24,7 @@ architecture test of test_me_tb is
 			finish : OUT std_logic
 		);
 	end component;
-	for all : input use entity work.input(rtl);
+	for all : input use entity work.input(rtl2);
 
 	signal a, b, c, d, e, f, g, h, i : std_logic_vector(3 downto 0) := "0000";
 	signal clear, clock, finish, s_tart : std_logic := '0';
@@ -59,4 +59,4 @@ begin
 
 			wait;
 	end process;
-end test;
+end test_me;
