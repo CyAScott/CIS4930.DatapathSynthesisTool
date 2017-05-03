@@ -30,13 +30,12 @@ architecture behavior of c_multiplier is
 		return ret_val;
 	end bits_to_int;
 begin
-	P0 : process (input1, input2)
-		variable l_val, r_val, value : integer;
+	process (input1, input2)
+		variable value : integer;
 		variable result : std_logic_Vector((width - 1) downto 0);
 	begin
-		l_val := bits_to_int(input1);
-		r_val := bits_to_int(input2);
-		value := l_val * r_val;
+		value := bits_to_int(input1) * bits_to_int(input2);
+		
 		for i in 0 to width - 1 loop
 			if (value rem 2) = 1 then
 				result(i) := '1';
@@ -45,6 +44,7 @@ begin
 			end if;
 			value := value / 2;
 		end loop;
-		output <= result((width - 1) downto 0);
-	end process P0;
+
+		output <= result;
+	end process;
 end behavior;

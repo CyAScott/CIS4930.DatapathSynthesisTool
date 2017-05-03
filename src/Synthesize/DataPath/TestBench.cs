@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Synthesize.Extensions;
@@ -88,10 +89,16 @@ namespace Synthesize.DataPath
 
             foreach (var testCase in inputAndOutputs)
             {
+                var values = testCase.ToDictionary(pair => pair.Key, pair => Convert.ToInt64(pair.Value, 2));
+
                 stream.WriteLine();
+                foreach (var expression in AifFile.AsExpressions)
+                {
+                    stream.WriteLine("\t\t\t-- " + expression);
+                }
                 foreach (var reg in registers.OfType<InputRegister>())
                 {
-                    stream.WriteLine($"\t\t\t{reg.Name} <= \"{testCase[reg.Name]}\";");
+                    stream.WriteLine($"\t\t\t{reg.Name} <= \"{testCase[reg.Name]}\"; -- {values[reg.Name]}");
                 }
                 stream.WriteLine("\t\t\ts_tart <= '1';");
                 stream.WriteLine("\t\t\tclock <= '1'; wait for 1 ns;");
@@ -100,6 +107,10 @@ namespace Synthesize.DataPath
                 {
                     stream.WriteLine("\t\t\tclock <= '1'; wait for 1 ns;");
                     stream.WriteLine("\t\t\tclock <= '0'; wait for 1 ns;");
+                }
+                foreach (var output in registers.OfType<OutputRegister>())
+                {
+                    stream.WriteLine($"\t\t\tassert {output.Name} = \"{testCase[output.Name]}\" report \"{AifFile.GetExpression(output, values)}\" severity failure;");
                 }
             }
 

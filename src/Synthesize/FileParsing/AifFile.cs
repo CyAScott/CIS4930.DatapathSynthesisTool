@@ -32,21 +32,21 @@ namespace Synthesize.FileParsing
             {"SUB", "-"},
             {"MULT", "*"}
         };
-        private string getExpressionFor(RegisterBase reg, string parentOpText = null)
+        private string getExpressionFor(RegisterBase reg, string parentOpText = null, Dictionary<string, long> values = null)
         {
             var operation = Operations.Values.FirstOrDefault(op => op.Output == reg);
             if (operation == null)
             {
-                return reg.Name;
+                return values == null || !values.ContainsKey(reg.Name) ? reg.Name : values[reg.Name].ToString();
             }
 
             string opText;
             if (!operationToText.TryGetValue(operation.Op, out opText))
             {
-                return $"{operation.Op}({getExpressionFor(operation.Left, operation.Op)}, {getExpressionFor(operation.Right, operation.Op)})";
+                return $"{operation.Op}({getExpressionFor(operation.Left, operation.Op, values)}, {getExpressionFor(operation.Right, operation.Op, values)})";
             }
 
-            var expression = $"{getExpressionFor(operation.Left, opText)} {opText} {getExpressionFor(operation.Right, opText)}";
+            var expression = $"{getExpressionFor(operation.Left, opText, values)} {opText} {getExpressionFor(operation.Right, opText, values)}";
 
             return string.IsNullOrEmpty(parentOpText) || string.Equals(parentOpText, opText, StringComparison.OrdinalIgnoreCase) ? expression : $"({expression})";
         }
@@ -294,7 +294,7 @@ namespace Synthesize.FileParsing
             parse(lines);
             validate();
             AsExpressions = Registers.Values.OfType<OutputRegister>()
-                .Select(reg => $"{reg.Name} = f({string.Join(", ", Registers.Values.OfType<InputRegister>().Select(input => input.Name))}) = {getExpressionFor(reg)}")
+                .Select(output => GetExpression(output))
                 .ToArray();
         }
         public Dictionary<string, int> MinCycles { get; } = new Dictionary<string, int>();
@@ -309,6 +309,12 @@ namespace Synthesize.FileParsing
                 $"regs {string.Join(" ", Registers.Values.OfType<Register>())}{Environment.NewLine}" +
                 string.Join(Environment.NewLine, Operations.Values) + Environment.NewLine +
                 "end";
+        }
+        public string GetExpression(OutputRegister output, Dictionary<string, long> values = null)
+        {
+            return $"{(values == null || !values.ContainsKey(output.Name) ? output.Name : values[output.Name].ToString())} = " +
+                $"f({string.Join(", ", Registers.Values.OfType<InputRegister>().Select(input => values == null || !values.ContainsKey(input.Name) ? input.Name : values[input.Name].ToString()))}) = " +
+                getExpressionFor(output, values: values);
         }
         public string[] AsExpressions { get; }
         public string[] OperationTypes { get; private set; }

@@ -16,40 +16,32 @@ entity c_adder is
 end c_adder;
 
 architecture behavior of c_adder is
-begin
-	P0 : process (input1, input2)
-		variable carry : std_logic := '0';
-		variable overflow : std_logic := '0';
-		variable temp : std_logic_vector(width - 1 downto 0);
+	function bits_to_int (input : std_logic_vector)return integer is
+		variable ret_val : integer := 0;
 	begin
-		for i in 0 to width - 1 loop
-			if input1(i) = '0' and input2(i) = '0' and carry = '0' then
-				temp(i) := '0';
-				carry := '0';
-			elsif input1(i) = '0' and input2(i) = '0' and carry = '1' then
-				temp(i) := '1';
-				carry := '0';
-			elsif input1(i) = '0' and input2(i) = '1' and carry = '0' then
-				temp(i) := '1';
-				carry := '0';
-			elsif input1(i) = '0' and input2(i) = '1' and carry = '1' then
-				temp(i) := '0';
-				carry := '1';
-			elsif input1(i) = '1' and input2(i) = '0' and carry = '0' then
-				temp(i) := '1';
-				carry := '0';
-			elsif input1(i) = '1' and input2(i) = '0' and carry = '1' then
-				temp(i) := '0';
-				carry := '1';
-			elsif input1(i) = '1' and input2(i) = '1' and carry = '0' then
-				temp(i) := '0';
-				carry := '1';
-			elsif input1(i) = '1' and input2(i) = '1' and carry = '1' then
-				temp(i) := '1';
-				carry := '1';
+		for i in input'range loop
+			if input(i) = '1' then
+				ret_val := 2 ** i + ret_val;
 			end if;
 		end loop;
+		return ret_val;
+	end bits_to_int;
+begin
+	process (input1, input2)
+		variable value : integer;
+		variable result : std_logic_vector((width - 1) downto 0);
+	begin
+		value := bits_to_int(input1) + bits_to_int(input2);
+
+		for i in 0 to width - 1 loop
+			if (value rem 2) = 1 then
+				result(i) := '1';
+			else
+				result(i) := '0';
+			end if;
+			value := value / 2;
+		end loop;
 		
-		output <= temp;
+		output <= result;
 	end process;
 end behavior;

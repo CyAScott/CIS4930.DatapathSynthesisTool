@@ -11,7 +11,7 @@ entity c_subtractor is
 	port
 	(
 		input1, input2 : in std_logic_vector((width - 1) downto 0);
-		output : out std_logic_vector(width downto 0)
+		output : out std_logic_vector((width - 1) downto 0)
 	);
 end c_subtractor;
 
@@ -26,25 +26,25 @@ architecture behavior of c_subtractor is
 		end loop; return ret_val;
 	end bits_to_int;
 begin
-	P0 : process (input1, input2)
-		variable difference : integer := 0;
-		variable temp : std_logic_vector(width downto 0);
+	process (input1, input2)
+		variable value : integer;
+		variable result : std_logic_vector((width - 1) downto 0);
 	begin
-		difference := bits_to_int(input1) - bits_to_int(input2);
+		value := bits_to_int(input1) - bits_to_int(input2);
 
-		if (difference < 0) then
-			difference := (2 ** (width + 1)) + difference;
+		if (value < 0) then
+			value := (2 ** width) + value;
 		end if;
 		
-		for i in 0 to width loop
-			if (difference rem 2) = 1 then
-				temp(i) := '1';
+		for i in 0 to width - 1 loop
+			if (value rem 2) = 1 then
+				result(i) := '1';
 			else
-				temp(i) := '0';
+				result(i) := '0';
 			end if;
-			difference := difference/2;
+			value := value / 2;
 		end loop;
 		
-		output <= temp;
+		output <= result;
 	end process;
 end behavior;
